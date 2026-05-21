@@ -7,7 +7,11 @@ public enum TokenType {
     // Identificadores y valores
     IDENTIFIER,
     NUMBER,
+STRING,
 
+FLOAT,
+
+BOOLEAN,
     // Operadores
     PLUS,
     MINUS,

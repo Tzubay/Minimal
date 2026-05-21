@@ -1,5 +1,6 @@
 package ast;
-import lexer.*;
+
+import lexer.Token;
 
 public abstract class Expr {
 
@@ -7,6 +8,30 @@ public abstract class Expr {
         public final int value;
 
         public Number(int value) {
+            this.value = value;
+        }
+    }
+
+    public static class FloatExpr extends Expr {
+        public final double value;
+
+        public FloatExpr(double value) {
+            this.value = value;
+        }
+    }
+
+    public static class StringExpr extends Expr {
+        public final String value;
+
+        public StringExpr(String value) {
+            this.value = value;
+        }
+    }
+
+    public static class BooleanExpr extends Expr {
+        public final boolean value;
+
+        public BooleanExpr(boolean value) {
             this.value = value;
         }
     }

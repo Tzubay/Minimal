@@ -89,11 +89,23 @@ public class Parser {
             return new Expr.Number(Integer.parseInt(previous().lexeme));
         }
 
+        if (match(TokenType.FLOAT)) {
+            return new Expr.FloatExpr(Double.parseDouble(previous().lexeme));
+        }
+
+        if (match(TokenType.STRING)) {
+            return new Expr.StringExpr(previous().lexeme);
+        }
+
+        if (match(TokenType.BOOLEAN)) {
+            return new Expr.BooleanExpr(Boolean.parseBoolean(previous().lexeme));
+        }
+
         if (match(TokenType.IDENTIFIER)) {
             return new Expr.Variable(previous().lexeme);
         }
 
-        throw new RuntimeException("Se esperaba un número o variable.");
+        throw new RuntimeException("Se esperaba un número, string, booleano o variable.");
     }
 
     private boolean match(TokenType... types) {

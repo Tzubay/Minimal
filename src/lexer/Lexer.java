@@ -3,6 +3,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Lexer {
+
+
+    private void string() {
+
+    StringBuilder builder = new StringBuilder();
+
+    while (!isAtEnd() && peek() != '"') {
+        builder.append(advance());
+    }
+
+    if (isAtEnd()) {
+        throw new RuntimeException("String sin cerrar.");
+    }
+
+    advance();
+
+    addToken(TokenType.STRING, builder.toString());
+}
     private final String source;
     private final List<Token> tokens = new ArrayList<>();
 
@@ -41,7 +59,10 @@ public class Lexer {
                 case ')':
                     addToken(TokenType.RIGHT_PAREN, ")");
                     break;
-
+                case '"':
+                    string();
+                    break;
+                    
                 case ' ':
                 case '\t':
                 case '\n':
@@ -65,14 +86,33 @@ public class Lexer {
     }
 
     private void number(char firstChar) {
+
         StringBuilder builder = new StringBuilder();
         builder.append(firstChar);
 
-        while (!isAtEnd() && isDigit(peek())) {
-            builder.append(advance());
+        boolean isFloat = false;
+
+        while (!isAtEnd()) {
+
+            char c = peek();
+
+            if (isDigit(c)) {
+                builder.append(advance());
+            }
+            else if (c == '.' && !isFloat) {
+                isFloat = true;
+                builder.append(advance());
+            }
+            else {
+                break;
+            }
         }
 
-        addToken(TokenType.NUMBER, builder.toString());
+        if (isFloat) {
+            addToken(TokenType.FLOAT, builder.toString());
+        } else {
+            addToken(TokenType.NUMBER, builder.toString());
+        }
     }
 
     private void identifier(char firstChar) {
@@ -91,6 +131,10 @@ public class Lexer {
                 break;
             case "print":
                 addToken(TokenType.PRINT, text);
+                break;
+            case "true":
+            case "false":
+                addToken(TokenType.BOOLEAN, text);
                 break;
             default:
                 addToken(TokenType.IDENTIFIER, text);

@@ -1,8 +1,13 @@
-let num1 = 10;
-let num2 = 5;
+let edad = 22;
+let pi = 3.14;
+let nombre = "Minimal";
+let vivo = true;
 
-print num1 + num1;
-print num1 + num1 + num2;
-print num1 * num2;
-print num1 / num2;
-print num2 - num1;
+print edad;
+print pi;
+print nombre;
+print vivo;
+
+print edad + 10;
+print pi + 2.0;
+print nombre + " Lang";
