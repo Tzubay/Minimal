@@ -1,13 +1,16 @@
-let edad = 22;
-let pi = 3.14;
-let nombre = "Minimal";
-let vivo = true;
+let x = 0;
 
-print edad;
-print pi;
-print nombre;
-print vivo;
+while x < 5 {
+    print x;
+    x = x + 1;
+}
 
-print edad + 10;
-print pi + 2.0;
-print nombre + " Lang";
+if x == 5 {
+    print "x llegó a 5";
+} else {
+    print "x no llegó";
+}
+
+for (let i = 0; i < 3; i = i + 1) {
+    print i;
+}

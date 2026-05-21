@@ -17,19 +17,101 @@ public class Interpreter {
     }
 
     private void execute(Stmt stmt) {
+
         if (stmt instanceof Stmt.Let) {
             Stmt.Let letStmt = (Stmt.Let) stmt;
+
+            if (variables.containsKey(letStmt.name)) {
+                throw new RuntimeException("La variable ya existe: " + letStmt.name);
+            }
+
             Value value = evaluate(letStmt.value);
             variables.put(letStmt.name, value);
-        } 
-        else if (stmt instanceof Stmt.Print) {
+            return;
+        }
+
+        if (stmt instanceof Stmt.Assign) {
+            Stmt.Assign assignStmt = (Stmt.Assign) stmt;
+
+            if (!variables.containsKey(assignStmt.name)) {
+                throw new RuntimeException("Variable no definida: " + assignStmt.name);
+            }
+
+            Value oldValue = variables.get(assignStmt.name);
+            Value newValue = evaluate(assignStmt.value);
+
+            if (oldValue.type != newValue.type) {
+                throw new RuntimeException(
+                    "No se puede asignar " + newValue.type +
+                    " a variable " + oldValue.type +
+                    ": " + assignStmt.name
+                );
+            }
+
+            variables.put(assignStmt.name, newValue);
+            return;
+        }
+
+        if (stmt instanceof Stmt.Print) {
             Stmt.Print printStmt = (Stmt.Print) stmt;
             Value value = evaluate(printStmt.expression);
             System.out.println(value);
+            return;
         }
+
+        if (stmt instanceof Stmt.Block) {
+            Stmt.Block blockStmt = (Stmt.Block) stmt;
+
+            for (Stmt innerStmt : blockStmt.statements) {
+                execute(innerStmt);
+            }
+
+            return;
+        }
+
+        if (stmt instanceof Stmt.If) {
+            Stmt.If ifStmt = (Stmt.If) stmt;
+
+            Value condition = evaluate(ifStmt.condition);
+
+            if (condition.type != Value.Type.BOOLEAN) {
+                throw new RuntimeException("La condición del if debe ser booleana.");
+            }
+
+            if ((boolean) condition.value) {
+                execute(ifStmt.thenBranch);
+            } else if (ifStmt.elseBranch != null) {
+                execute(ifStmt.elseBranch);
+            }
+
+            return;
+        }
+
+        if (stmt instanceof Stmt.While) {
+            Stmt.While whileStmt = (Stmt.While) stmt;
+
+            while (true) {
+                Value condition = evaluate(whileStmt.condition);
+
+                if (condition.type != Value.Type.BOOLEAN) {
+                    throw new RuntimeException("La condición del while debe ser booleana.");
+                }
+
+                if (!((boolean) condition.value)) {
+                    break;
+                }
+
+                execute(whileStmt.body);
+            }
+
+            return;
+        }
+
+        throw new RuntimeException("Instrucción no válida.");
     }
 
     private Value evaluate(Expr expr) {
+
         if (expr instanceof Expr.Number) {
             return new Value(Value.Type.INT, ((Expr.Number) expr).value);
         }
@@ -70,6 +152,7 @@ public class Interpreter {
 
     private Value evaluateBinary(Value left, Token operator, Value right) {
         switch (operator.type) {
+
             case PLUS:
                 return add(left, right);
 
@@ -82,14 +165,35 @@ public class Interpreter {
             case SLASH:
                 return numericOperation(left, right, "/");
 
+            case LESS:
+                return compareOperation(left, right, "<");
+
+            case LESS_EQUAL:
+                return compareOperation(left, right, "<=");
+
+            case GREATER:
+                return compareOperation(left, right, ">");
+
+            case GREATER_EQUAL:
+                return compareOperation(left, right, ">=");
+
+            case EQUAL_EQUAL:
+                return equalityOperation(left, right, "==");
+
+            case BANG_EQUAL:
+                return equalityOperation(left, right, "!=");
+
             default:
-                throw new RuntimeException("Operador no válido.");
+                throw new RuntimeException("Operador no válido: " + operator.lexeme);
         }
     }
 
     private Value add(Value left, Value right) {
         if (left.type == Value.Type.STRING && right.type == Value.Type.STRING) {
-            return new Value(Value.Type.STRING, left.value.toString() + right.value.toString());
+            return new Value(
+                Value.Type.STRING,
+                left.value.toString() + right.value.toString()
+            );
         }
 
         return numericOperation(left, right, "+");
@@ -97,7 +201,9 @@ public class Interpreter {
 
     private Value numericOperation(Value left, Value right, String operator) {
         if (!isNumeric(left) || !isNumeric(right)) {
-            throw new RuntimeException("Operación inválida entre " + left.type + " y " + right.type);
+            throw new RuntimeException(
+                "Operación numérica inválida entre " + left.type + " y " + right.type
+            );
         }
 
         if (left.type == Value.Type.FLOAT || right.type == Value.Type.FLOAT) {
@@ -131,6 +237,54 @@ public class Interpreter {
         }
 
         throw new RuntimeException("Operador numérico no válido.");
+    }
+
+    private Value compareOperation(Value left, Value right, String operator) {
+        if (!isNumeric(left) || !isNumeric(right)) {
+            throw new RuntimeException(
+                "Comparación inválida entre " + left.type + " y " + right.type
+            );
+        }
+
+        double a = toDouble(left);
+        double b = toDouble(right);
+
+        boolean result;
+
+        switch (operator) {
+            case "<":
+                result = a < b;
+                break;
+            case "<=":
+                result = a <= b;
+                break;
+            case ">":
+                result = a > b;
+                break;
+            case ">=":
+                result = a >= b;
+                break;
+            default:
+                throw new RuntimeException("Operador de comparación no válido.");
+        }
+
+        return new Value(Value.Type.BOOLEAN, result);
+    }
+
+    private Value equalityOperation(Value left, Value right, String operator) {
+        boolean result;
+
+        if (left.type != right.type) {
+            result = false;
+        } else {
+            result = left.value.equals(right.value);
+        }
+
+        if (operator.equals("!=")) {
+            result = !result;
+        }
+
+        return new Value(Value.Type.BOOLEAN, result);
     }
 
     private boolean isNumeric(Value value) {

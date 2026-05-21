@@ -1,29 +1,37 @@
 package lexer;
+
 public enum TokenType {
-    // Palabras clave
     LET,
     PRINT,
+    IF,
+    ELSE,
+    WHILE,
+    FOR,
 
-    // Identificadores y valores
     IDENTIFIER,
     NUMBER,
-STRING,
+    FLOAT,
+    STRING,
+    BOOLEAN,
 
-FLOAT,
-
-BOOLEAN,
-    // Operadores
     PLUS,
     MINUS,
     STAR,
     SLASH,
-    EQUAL,
 
-    // Símbolos
+    EQUAL,
+    EQUAL_EQUAL,
+    BANG_EQUAL,
+    LESS,
+    LESS_EQUAL,
+    GREATER,
+    GREATER_EQUAL,
+
     SEMICOLON,
     LEFT_PAREN,
     RIGHT_PAREN,
+    LEFT_BRACE,
+    RIGHT_BRACE,
 
-    // Final
     EOF
 }

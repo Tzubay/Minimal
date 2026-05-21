@@ -3,7 +3,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Lexer {
+    private boolean match(char expected) {
+        if (isAtEnd()) return false;
+        if (source.charAt(current) != expected) return false;
 
+        current++;
+        return true;
+    }
 
     private void string() {
 
@@ -47,9 +53,9 @@ public class Lexer {
                 case '/':
                     addToken(TokenType.SLASH, "/");
                     break;
-                case '=':
-                    addToken(TokenType.EQUAL, "=");
-                    break;
+          //      case '=':
+          //          addToken(TokenType.EQUAL, "=");
+          //          break;
                 case ';':
                     addToken(TokenType.SEMICOLON, ";");
                     break;
@@ -58,6 +64,36 @@ public class Lexer {
                     break;
                 case ')':
                     addToken(TokenType.RIGHT_PAREN, ")");
+                    break;
+                case '=':
+                    addToken(match('=') ? TokenType.EQUAL_EQUAL : TokenType.EQUAL, 
+                            source.substring(current - 1, current));
+                    break;
+
+                case '!':
+                    if (match('=')) {
+                        addToken(TokenType.BANG_EQUAL, "!=");
+                    } else {
+                        throw new RuntimeException("Caracter no válido: !");
+                    }
+                    break;
+
+                case '<':
+                    addToken(match('=') ? TokenType.LESS_EQUAL : TokenType.LESS,
+                            source.substring(current - 1, current));
+                    break;
+
+                case '>':
+                    addToken(match('=') ? TokenType.GREATER_EQUAL : TokenType.GREATER,
+                            source.substring(current - 1, current));
+                    break;
+
+                case '{':
+                    addToken(TokenType.LEFT_BRACE, "{");
+                    break;
+
+                case '}':
+                    addToken(TokenType.RIGHT_BRACE, "}");
                     break;
                 case '"':
                     string();
@@ -116,6 +152,7 @@ public class Lexer {
     }
 
     private void identifier(char firstChar) {
+
         StringBuilder builder = new StringBuilder();
         builder.append(firstChar);
 
@@ -135,6 +172,18 @@ public class Lexer {
             case "true":
             case "false":
                 addToken(TokenType.BOOLEAN, text);
+                break;
+            case "if":
+                addToken(TokenType.IF, text);
+                break;
+            case "else":
+                addToken(TokenType.ELSE, text);
+                break;
+            case "while":
+                addToken(TokenType.WHILE, text);
+                break;
+            case "for":
+                addToken(TokenType.FOR, text);
                 break;
             default:
                 addToken(TokenType.IDENTIFIER, text);
