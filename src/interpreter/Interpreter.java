@@ -170,9 +170,7 @@ public class Interpreter {
         if (stmt instanceof Stmt.Block) {
             Stmt.Block blockStmt = (Stmt.Block) stmt;
 
-            for (Stmt innerStmt : blockStmt.statements) {
-                execute(innerStmt);
-            }
+            executeBlock(blockStmt.statements);
 
             return;
         }
@@ -221,7 +219,17 @@ public class Interpreter {
         }
         throw new RuntimeException("Instrucción no válida.");
     }
+    private void executeBlock(List<Stmt> statements) {
+        scopes.add(new HashMap<>());
 
+        try {
+            for (Stmt stmt : statements) {
+                execute(stmt);
+            }
+        } finally {
+            scopes.remove(scopes.size() - 1);
+        }
+    }
     private Value evaluate(Expr expr) {
 
         if (expr instanceof Expr.Number) {

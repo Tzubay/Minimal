@@ -1,0 +1,12 @@
+let matriz = [];
+let dimension = input("Ingresa la dimension nxn de la matriz: ");
+
+for (let i = 0; i < dimension; i = i + 1) {
+    matriz.append([]);
+
+    for (let m = 0; m < dimension; m = m + 1) {
+        matriz[i].append("h");
+    }
+}
+
+print matriz;

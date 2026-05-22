@@ -1,0 +1,12 @@
+let baul = [];
+fn CICLO(inicio, final){
+    for (let i = inicio; i < final; i = i + 1){
+        baul.append([]);
+    }
+    return baul;
+}
+
+let inicio = input("Escribe el numero de inicio: ");
+let final = input("Escribe el numero final: ");
+
+print CICLO(inicio, final);

@@ -1,0 +1,3 @@
+let matriz = [[],[],[]];
+matriz[1].append(2);
+print matriz;
