@@ -128,6 +128,18 @@ public class Interpreter {
             return new Value(Value.Type.BOOLEAN, ((Expr.BooleanExpr) expr).value);
         }
 
+        if (expr instanceof Expr.ArrayExpr) {
+            Expr.ArrayExpr arrayExpr = (Expr.ArrayExpr) expr;
+
+            List<Value> elements = new java.util.ArrayList<>();
+
+            for (Expr element : arrayExpr.elements) {
+                elements.add(evaluate(element));
+            }
+
+            return new Value(Value.Type.ARRAY, elements);
+        }
+
         if (expr instanceof Expr.Variable) {
             String name = ((Expr.Variable) expr).name;
 

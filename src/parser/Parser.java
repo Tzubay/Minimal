@@ -242,6 +242,10 @@ public class Parser {
             return new Expr.BooleanExpr(Boolean.parseBoolean(previous().lexeme));
         }
 
+        if (match(TokenType.LEFT_BRACKET)) {
+            return arrayLiteral();
+        }
+
         if (match(TokenType.IDENTIFIER)) {
             return new Expr.Variable(previous().lexeme);
         }
@@ -252,7 +256,21 @@ public class Parser {
             return expr;
         }
 
-        throw new RuntimeException("Se esperaba un número, string, booleano, variable o expresión entre paréntesis.");
+        throw new RuntimeException("Se esperaba un número, string, booleano, arreglo, variable o expresión entre paréntesis.");
+    }
+    
+    private Expr arrayLiteral() {
+        List<Expr> elements = new ArrayList<>();
+
+        if (!check(TokenType.RIGHT_BRACKET)) {
+            do {
+                elements.add(expression());
+            } while (match(TokenType.COMMA));
+        }
+
+        consume(TokenType.RIGHT_BRACKET, "Se esperaba ']' al final del arreglo.");
+
+        return new Expr.ArrayExpr(elements);
     }
 
     private boolean match(TokenType... types) {

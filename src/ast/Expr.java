@@ -1,6 +1,7 @@
 package ast;
 
 import lexer.Token;
+import java.util.List;
 
 public abstract class Expr {
 
@@ -33,6 +34,14 @@ public abstract class Expr {
 
         public BooleanExpr(boolean value) {
             this.value = value;
+        }
+    }
+
+    public static class ArrayExpr extends Expr {
+        public final List<Expr> elements;
+
+        public ArrayExpr(List<Expr> elements) {
+            this.elements = elements;
         }
     }
 
