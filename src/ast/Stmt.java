@@ -36,10 +36,10 @@ public abstract class Stmt {
     }
 
     public static class Return extends Stmt {
-        public final Expr value;
+        public final List<Expr> values;
 
-        public Return(Expr value) {
-            this.value = value;
+        public Return(List<Expr> values) {
+            this.values = values;
         }
     }
 

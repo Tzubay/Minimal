@@ -90,7 +90,21 @@ public class Interpreter {
 
         if (stmt instanceof Stmt.Return) {
             Stmt.Return returnStmt = (Stmt.Return) stmt;
-            Value value = evaluate(returnStmt.value);
+
+            Value value;
+
+            if (returnStmt.values.size() == 1) {
+                value = evaluate(returnStmt.values.get(0));
+            } else {
+                StringBuilder builder = new StringBuilder();
+
+                for (Expr expr : returnStmt.values) {
+                    builder.append(evaluate(expr).toString());
+                }
+
+                value = new Value(Value.Type.STRING, builder.toString());
+            }
+
             throw new ReturnException(value);
         }
 

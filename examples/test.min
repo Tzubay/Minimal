@@ -1,8 +1,14 @@
-let arr = [];
-
-for (let i = 0; i < 2; i = i + 1) {
-    arr.append(i);
+fn INE(edad) {
+    if (edad < 18) {
+        let restante = 18 - edad;
+        return "No puedes tramitar tu INE, te faltan: ", restante, " años para hacerlo";
+    }
+    else {
+        return "Puedes tramitar tu INE, pasa";
+    }
 }
 
-print arr;
-print len(arr);
+let nombre = input("Escribe tu nombre: ");
+let edad = input("Escribe tu edad: ");
+
+print "Te llamas ", nombre, " y ", INE(edad);

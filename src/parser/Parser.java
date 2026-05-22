@@ -91,13 +91,20 @@ private Stmt expressionStatement() {
 
         return new Stmt.Function(name.lexeme, params, body);
     }
-private Stmt returnStatement() {
-    Expr value = expression();
+    
+    private Stmt returnStatement() {
+        List<Expr> values = new ArrayList<>();
 
-    consume(TokenType.SEMICOLON, "Se esperaba ';' después del return.");
+        values.add(expression());
 
-    return new Stmt.Return(value);
-}
+        while (match(TokenType.COMMA)) {
+            values.add(expression());
+        }
+
+        consume(TokenType.SEMICOLON, "Se esperaba ';' después del return.");
+
+        return new Stmt.Return(values);
+    }
 
     private Stmt statement() {
 
