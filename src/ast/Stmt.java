@@ -57,10 +57,10 @@ public static class IndexAssign extends Stmt {
 }
 
     public static class Print extends Stmt {
-        public final Expr expression;
+        public final List<Expr> expressions;
 
-        public Print(Expr expression) {
-            this.expression = expression;
+        public Print(List<Expr> expressions) {
+            this.expressions = expressions;
         }
     }
 

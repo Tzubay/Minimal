@@ -141,8 +141,15 @@ public class Interpreter {
 
         if (stmt instanceof Stmt.Print) {
             Stmt.Print printStmt = (Stmt.Print) stmt;
-            Value value = evaluate(printStmt.expression);
-            System.out.println(value);
+
+            StringBuilder output = new StringBuilder();
+
+            for (Expr expression : printStmt.expressions) {
+                Value value = evaluate(expression);
+                output.append(value.toString());
+            }
+
+            System.out.println(output.toString());
             return;
         }
 

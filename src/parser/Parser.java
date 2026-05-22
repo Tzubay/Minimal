@@ -139,11 +139,17 @@ private Stmt returnStatement() {
     }
 
     private Stmt printStatement() {
-        Expr value = expression();
+        List<Expr> expressions = new ArrayList<>();
+
+        expressions.add(expression());
+
+        while (match(TokenType.COMMA)) {
+            expressions.add(expression());
+        }
 
         consume(TokenType.SEMICOLON, "Se esperaba ';' al final.");
 
-        return new Stmt.Print(value);
+        return new Stmt.Print(expressions);
     }
 
     private Stmt ifStatement() {

@@ -1,14 +1,9 @@
 let nombre = input("Escribe tu nombre: ");
 let edad = input("Escribe tu edad: ");
+
 let salida = ["Tu nombre es ", nombre, " y tu edad es ", edad];
 
 print salida;
-print ["Cantidad de elementos del arreglo es: ", len(salida)];
 
-let matriz = [
-    [1, 2, 3],
-    [4, 5, 6]
-];
-
-print len(matriz);
-print len(matriz[0]);
+print "Cantidad de elementos del arreglo es: ", len(salida);
+print "Tu nombre es ", nombre, " y tu edad es ", edad;
