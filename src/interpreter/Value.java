@@ -11,6 +11,7 @@ public class Value {
         STRING,
         BOOLEAN,
         ARRAY,
+        THREAD,
         UNDEFINED
     }
 
@@ -26,6 +27,9 @@ public class Value {
     public String toString() {
         if (type == Type.UNDEFINED) {
             return "undefined";
+        }
+        if (type == Type.THREAD) {
+            return "<thread>";
         }
         if (type == Type.ARRAY) {
             List<Value> values = (List<Value>) value;

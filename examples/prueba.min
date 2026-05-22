@@ -1,31 +1,19 @@
-let dia = input("Ingresa un número del 1 al 7: ");
-let diaNombre;
+fn tarea(nombre, veces) {
+    for (let i = 0; i < veces; i = i + 1) {
+        print nombre, " -> ", i;
+        sleep(300);
+    }
 
-switch (dia) {
-    case 1:
-        diaNombre = "Lunes";
-        break;
-    case 2:
-        diaNombre = "Martes";
-        break;
-    case 3:
-        diaNombre = "Miércoles";
-        break;
-    case 4:
-        diaNombre = "Jueves";
-        break;
-    case 5:
-        diaNombre = "Viernes";
-        break;
-    case 6:
-        diaNombre = "Sábado";
-        break;
-    case 7:
-        diaNombre = "Domingo";
-        break;
-    default:
-        diaNombre = "Día inválido";
-        break;
+    return "terminado";
 }
 
-print "Día seleccionado: ", diaNombre;
+let h1 = thread(tarea, "Hilo A", 3);
+let h2 = thread(tarea, "Hilo B", 3);
+
+start(h1);
+start(h2);
+
+join(h1);
+join(h2);
+
+print "Programa terminado";

@@ -8,13 +8,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 public class Interpreter {
-    private final List<Map<String, Value>> scopes = new ArrayList<>();
+    private final Map<String, Value> globalScope = new HashMap<>();
+
+    private final ThreadLocal<List<Map<String, Value>>> scopes =
+        ThreadLocal.withInitial(() -> {
+            List<Map<String, Value>> list = new ArrayList<>();
+            list.add(globalScope);
+            return list;
+        });
+
     private final Map<String, FunctionValue> functions = new HashMap<>();
     private final Scanner scanner = new Scanner(System.in);
 
     public Interpreter() {
-        scopes.add(new HashMap<>());
+    /*     scopes.add(new HashMap<>());*/
     }
 
     public void interpret(List<Stmt> statements) {
@@ -22,55 +31,90 @@ public class Interpreter {
             execute(stmt);
         }
     }
+private List<Map<String, Value>> scopeStack() {
 
+    return scopes.get();
+
+}
     private Map<String, Value> currentScope() {
-        return scopes.get(scopes.size() - 1);
+
+        List<Map<String, Value>> stack = scopeStack();
+
+        return stack.get(stack.size() - 1);
+
     }
 
-    private boolean variableExistsInAnyScope(String name) {
-        for (int i = scopes.size() - 1; i >= 0; i--) {
-            if (scopes.get(i).containsKey(name)) {
-                return true;
-            }
+private boolean variableExistsInAnyScope(String name) {
+    List<Map<String, Value>> stack = scopeStack();
+
+    for (int i = stack.size() - 1; i >= 0; i--) {
+        if (stack.get(i).containsKey(name)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+private Value getVariable(String name) {
+
+    List<Map<String, Value>> stack = scopeStack();
+
+    for (int i = stack.size() - 1; i >= 0; i--) {
+
+        Map<String, Value> scope = stack.get(i);
+
+        if (scope.containsKey(name)) {
+
+            return scope.get(name);
+
         }
 
-        return false;
     }
 
-    private Value getVariable(String name) {
-        for (int i = scopes.size() - 1; i >= 0; i--) {
-            Map<String, Value> scope = scopes.get(i);
+    throw new RuntimeException("Variable no definida: " + name);
 
-            if (scope.containsKey(name)) {
-                return scope.get(name);
-            }
-        }
+}
 
-        throw new RuntimeException("Variable no definida: " + name);
-    }
 
-    private void assignVariable(String name, Value newValue) {
-        for (int i = scopes.size() - 1; i >= 0; i--) {
-            Map<String, Value> scope = scopes.get(i);
 
-            if (scope.containsKey(name)) {
-                Value oldValue = scope.get(name);
+private void assignVariable(String name, Value newValue) {
+
+    List<Map<String, Value>> stack = scopeStack();
+
+    for (int i = stack.size() - 1; i >= 0; i--) {
+
+        Map<String, Value> scope = stack.get(i);
+
+        if (scope.containsKey(name)) {
+
+            Value oldValue = scope.get(name);
 
             if (oldValue.type != Value.Type.UNDEFINED && oldValue.type != newValue.type) {
+
                 throw new RuntimeException(
+
                     "No se puede asignar " + newValue.type +
+
                     " a variable " + oldValue.type +
+
                     ": " + name
+
                 );
+
             }
 
-                scope.put(name, newValue);
-                return;
-            }
+            scope.put(name, newValue);
+
+            return;
+
         }
 
-        throw new RuntimeException("Variable no definida: " + name);
     }
+
+    throw new RuntimeException("Variable no definida: " + name);
+
+}
 
     private void execute(Stmt stmt) {
         if (stmt instanceof Stmt.Break) {
@@ -266,17 +310,27 @@ public class Interpreter {
         }
         throw new RuntimeException("Instrucción no válida.");
     }
-    private void executeBlock(List<Stmt> statements) {
-        scopes.add(new HashMap<>());
+private void executeBlock(List<Stmt> statements) {
 
-        try {
-            for (Stmt stmt : statements) {
-                execute(stmt);
-            }
-        } finally {
-            scopes.remove(scopes.size() - 1);
+    List<Map<String, Value>> stack = scopeStack();
+
+    stack.add(new HashMap<>());
+
+    try {
+
+        for (Stmt stmt : statements) {
+
+            execute(stmt);
+
         }
+
+    } finally {
+
+        stack.remove(stack.size() - 1);
+
     }
+
+}
     private Value evaluate(Expr expr) {
 
         if (expr instanceof Expr.Number) {
@@ -336,41 +390,45 @@ public class Interpreter {
             return getVariable(name);
         }
 
-        if (expr instanceof Expr.Call) {
-            Expr.Call callExpr = (Expr.Call) expr;
+if (expr instanceof Expr.Call) {
+    Expr.Call callExpr = (Expr.Call) expr;
 
-            if (!(callExpr.callee instanceof Expr.Variable)) {
-                throw new RuntimeException("Solo se pueden llamar funciones por nombre.");
-            }
+    if (!(callExpr.callee instanceof Expr.Variable)) {
+        throw new RuntimeException("Solo se pueden llamar funciones por nombre.");
+    }
 
-            String functionName = ((Expr.Variable) callExpr.callee).name;
+    String functionName = ((Expr.Variable) callExpr.callee).name;
 
-            List<Value> argumentValues = new ArrayList<>();
+    if (functionName.equals("thread")) {
+        return nativeThread(callExpr.arguments);
+    }
 
-            for (Expr argument : callExpr.arguments) {
-                argumentValues.add(evaluate(argument));
-            }
+    List<Value> argumentValues = new ArrayList<>();
 
-            if (isNativeFunction(functionName)) {
-                return callNativeFunction(functionName, argumentValues);
-            }
+    for (Expr argument : callExpr.arguments) {
+        argumentValues.add(evaluate(argument));
+    }
 
-            if (!functions.containsKey(functionName)) {
-                throw new RuntimeException("Función no definida: " + functionName);
-            }
+    if (isNativeFunction(functionName)) {
+        return callNativeFunction(functionName, argumentValues);
+    }
 
-            FunctionValue function = functions.get(functionName);
+    if (!functions.containsKey(functionName)) {
+        throw new RuntimeException("Función no definida: " + functionName);
+    }
 
-            if (argumentValues.size() != function.params.size()) {
-                throw new RuntimeException(
-                    "La función " + functionName + " esperaba " +
-                    function.params.size() + " argumentos, pero recibió " +
-                    argumentValues.size()
-                );
-            }
+    FunctionValue function = functions.get(functionName);
 
-            return callFunction(function, argumentValues);
-        }
+    if (argumentValues.size() != function.params.size()) {
+        throw new RuntimeException(
+            "La función " + functionName + " esperaba " +
+            function.params.size() + " argumentos, pero recibió " +
+            argumentValues.size()
+        );
+    }
+
+    return callFunction(function, argumentValues);
+}
         if (expr instanceof Expr.MethodCall) {
             Expr.MethodCall methodCall = (Expr.MethodCall) expr;
 
@@ -396,45 +454,59 @@ public class Interpreter {
         throw new RuntimeException("Expresión no válida.");
     }
 
-    private Value callFunction(FunctionValue function, List<Value> argumentValues) {
-        Map<String, Value> functionScope = new HashMap<>();
+private Value callFunction(FunctionValue function, List<Value> argumentValues) {
+    Map<String, Value> functionScope = new HashMap<>();
 
-        for (int i = 0; i < function.params.size(); i++) {
-            functionScope.put(function.params.get(i), argumentValues.get(i));
-        }
-
-        scopes.add(functionScope);
-
-        try {
-            for (Stmt stmt : function.body) {
-                execute(stmt);
-            }
-        } catch (ReturnException returnValue) {
-            scopes.remove(scopes.size() - 1);
-            return returnValue.value;
-        }
-
-        scopes.remove(scopes.size() - 1);
-
-        throw new RuntimeException("La función " + function.name + " no retornó ningún valor.");
+    for (int i = 0; i < function.params.size(); i++) {
+        functionScope.put(function.params.get(i), argumentValues.get(i));
     }
 
-    private boolean isNativeFunction(String name) {
-        return name.equals("input") || name.equals("len");
-    }
+    List<Map<String, Value>> stack = scopeStack();
+    stack.add(functionScope);
 
-    private Value callNativeFunction(String name, List<Value> arguments) {
-        switch (name) {
-            case "input":
-                return nativeInput(arguments);
-
-            case "len":
-                return nativeLen(arguments);
-
-            default:
-                throw new RuntimeException("Función nativa no definida: " + name);
+    try {
+        for (Stmt stmt : function.body) {
+            execute(stmt);
         }
+    } catch (ReturnException returnValue) {
+        stack.remove(stack.size() - 1);
+        return returnValue.value;
     }
+
+    stack.remove(stack.size() - 1);
+
+    throw new RuntimeException("La función " + function.name + " no retornó ningún valor.");
+}
+
+private boolean isNativeFunction(String name) {
+    return name.equals("input") ||
+           name.equals("len") ||
+           name.equals("start") ||
+           name.equals("join") ||
+           name.equals("sleep");
+}
+
+private Value callNativeFunction(String name, List<Value> arguments) {
+    switch (name) {
+        case "input":
+            return nativeInput(arguments);
+
+        case "len":
+            return nativeLen(arguments);
+
+        case "start":
+            return nativeStart(arguments);
+
+        case "join":
+            return nativeJoin(arguments);
+
+        case "sleep":
+            return nativeSleep(arguments);
+
+        default:
+            throw new RuntimeException("Función nativa no definida: " + name);
+    }
+}
 
     private Value nativeInput(List<Value> arguments) {
         if (arguments.size() > 1) {
@@ -513,6 +585,124 @@ public class Interpreter {
 
         throw new RuntimeException("len() solo funciona con ARRAY o STRING.");
     }
+private Value nativeThread(List<Expr> rawArguments) {
+    if (rawArguments.size() < 1) {
+        throw new RuntimeException("thread() necesita al menos el nombre de una función.");
+    }
+
+    Expr firstArg = rawArguments.get(0);
+
+    if (!(firstArg instanceof Expr.Variable)) {
+        throw new RuntimeException("El primer argumento de thread() debe ser el nombre de una función.");
+    }
+
+    String functionName = ((Expr.Variable) firstArg).name;
+
+    if (!functions.containsKey(functionName)) {
+        throw new RuntimeException("Función no definida para thread(): " + functionName);
+    }
+
+    FunctionValue function = functions.get(functionName);
+
+    List<Value> argumentValues = new ArrayList<>();
+
+    for (int i = 1; i < rawArguments.size(); i++) {
+        argumentValues.add(evaluate(rawArguments.get(i)));
+    }
+
+    if (argumentValues.size() != function.params.size()) {
+        throw new RuntimeException(
+            "La función " + functionName + " esperaba " +
+            function.params.size() + " argumentos, pero recibió " +
+            argumentValues.size()
+        );
+    }
+
+    ThreadValue threadValue = new ThreadValue(function, argumentValues);
+
+    return new Value(Value.Type.THREAD, threadValue);
+}
+
+private Value nativeStart(List<Value> arguments) {
+    if (arguments.size() != 1) {
+        throw new RuntimeException("start() recibe exactamente 1 argumento.");
+    }
+
+    Value value = arguments.get(0);
+
+    if (value.type != Value.Type.THREAD) {
+        throw new RuntimeException("start() solo recibe THREAD.");
+    }
+
+    ThreadValue threadValue = (ThreadValue) value.value;
+
+    if (threadValue.started) {
+        throw new RuntimeException("Este hilo ya fue iniciado.");
+    }
+
+    Thread thread = new Thread(() -> {
+        try {
+            callFunction(threadValue.function, threadValue.arguments);
+        } catch (RuntimeException e) {
+            System.err.println("Error en hilo: " + e.getMessage());
+        }
+    });
+
+    threadValue.thread = thread;
+    threadValue.started = true;
+
+    thread.start();
+
+    return new Value(Value.Type.UNDEFINED, null);
+}
+private Value nativeJoin(List<Value> arguments) {
+    if (arguments.size() != 1) {
+        throw new RuntimeException("join() recibe exactamente 1 argumento.");
+    }
+
+    Value value = arguments.get(0);
+
+    if (value.type != Value.Type.THREAD) {
+        throw new RuntimeException("join() solo recibe THREAD.");
+    }
+
+    ThreadValue threadValue = (ThreadValue) value.value;
+
+    if (!threadValue.started || threadValue.thread == null) {
+        throw new RuntimeException("No puedes hacer join() de un hilo que no ha iniciado.");
+    }
+
+    try {
+        threadValue.thread.join();
+    } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new RuntimeException("El hilo fue interrumpido.");
+    }
+
+    return new Value(Value.Type.UNDEFINED, null);
+}
+
+private Value nativeSleep(List<Value> arguments) {
+    if (arguments.size() != 1) {
+        throw new RuntimeException("sleep() recibe exactamente 1 argumento en milisegundos.");
+    }
+
+    Value milliseconds = arguments.get(0);
+
+    if (milliseconds.type != Value.Type.INT) {
+        throw new RuntimeException("sleep() necesita un INT.");
+    }
+
+    try {
+        Thread.sleep((int) milliseconds.value);
+    } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new RuntimeException("sleep() fue interrumpido.");
+    }
+
+    return new Value(Value.Type.UNDEFINED, null);
+}
+
 
 private Value callMethod(Value object, String methodName, List<Value> arguments) {
     if (object.type == Value.Type.ARRAY) {
