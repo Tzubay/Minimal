@@ -200,7 +200,11 @@ public class Interpreter {
 
             return;
         }
-
+        if (stmt instanceof Stmt.Expression) {
+            Stmt.Expression exprStmt = (Stmt.Expression) stmt;
+            evaluate(exprStmt.expression);
+            return;
+        }
         throw new RuntimeException("Instrucción no válida.");
     }
 
@@ -298,7 +302,19 @@ public class Interpreter {
 
             return callFunction(function, argumentValues);
         }
+        if (expr instanceof Expr.MethodCall) {
+            Expr.MethodCall methodCall = (Expr.MethodCall) expr;
 
+            Value object = evaluate(methodCall.object);
+
+            List<Value> argumentValues = new ArrayList<>();
+
+            for (Expr argument : methodCall.arguments) {
+                argumentValues.add(evaluate(argument));
+            }
+
+            return callMethod(object, methodCall.methodName, argumentValues);
+        }
         if (expr instanceof Expr.Binary) {
             Expr.Binary binary = (Expr.Binary) expr;
 
@@ -428,6 +444,31 @@ public class Interpreter {
 
         throw new RuntimeException("len() solo funciona con ARRAY o STRING.");
     }
+
+private Value callMethod(Value object, String methodName, List<Value> arguments) {
+    if (object.type == Value.Type.ARRAY) {
+        switch (methodName) {
+            case "append":
+                return arrayAppend(object, arguments);
+            default:
+                throw new RuntimeException("Método no definido para ARRAY: " + methodName);
+        }
+    }
+
+    throw new RuntimeException("El tipo " + object.type + " no tiene métodos.");
+}
+
+private Value arrayAppend(Value arrayValue, List<Value> arguments) {
+    if (arguments.size() != 1) {
+        throw new RuntimeException("append() recibe exactamente 1 argumento.");
+    }
+
+    List<Value> elements = (List<Value>) arrayValue.value;
+    elements.add(arguments.get(0));
+
+    return arrayValue;
+}
+
     private Value evaluateBinary(Value left, Token operator, Value right) {
         switch (operator.type) {
 

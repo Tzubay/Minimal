@@ -10,6 +10,31 @@ public class Parser {
     private final List<Token> tokens;
     private int current = 0;
 
+private Stmt expressionStatement() {
+    Expr expr = expression();
+
+    if (match(TokenType.EQUAL)) {
+        Expr value = expression();
+
+        consume(TokenType.SEMICOLON, "Se esperaba ';' al final de la asignación.");
+
+        if (expr instanceof Expr.Variable) {
+            Expr.Variable variable = (Expr.Variable) expr;
+            return new Stmt.Assign(variable.name, value);
+        }
+
+        if (expr instanceof Expr.Index) {
+            Expr.Index indexExpr = (Expr.Index) expr;
+            return new Stmt.IndexAssign(indexExpr.array, indexExpr.index, value);
+        }
+
+        throw new RuntimeException("Destino de asignación inválido.");
+    }
+
+    consume(TokenType.SEMICOLON, "Se esperaba ';' al final de la expresión.");
+
+    return new Stmt.Expression(expr);
+}
     public Parser(List<Token> tokens) {
         this.tokens = tokens;
     }
@@ -107,11 +132,12 @@ private Stmt returnStatement() {
             return new Stmt.Block(block());
         }
 
-        if (check(TokenType.IDENTIFIER)) {
+    /*    if (check(TokenType.IDENTIFIER)) {
             return assignmentStatement();
-        }
+        }*/
+        return expressionStatement();
 
-        throw new RuntimeException("Se esperaba una instrucción.");
+      /*   throw new RuntimeException("Se esperaba una instrucción.");*/
     }
 
     private Stmt letStatement() {
@@ -299,36 +325,53 @@ private Stmt returnStatement() {
 
         return expr;
     }
-    private Expr postfix() {
-        Expr expr = primary();
+private Expr postfix() {
+    Expr expr = primary();
 
-        while (true) {
-            if (match(TokenType.LEFT_BRACKET)) {
-                Expr index = expression();
-                consume(TokenType.RIGHT_BRACKET, "Se esperaba ']' después del índice.");
+    while (true) {
+        if (match(TokenType.LEFT_BRACKET)) {
+            Expr index = expression();
+            consume(TokenType.RIGHT_BRACKET, "Se esperaba ']' después del índice.");
 
-                expr = new Expr.Index(expr, index);
-            } 
-            else if (match(TokenType.LEFT_PAREN)) {
-                List<Expr> arguments = new ArrayList<>();
+            expr = new Expr.Index(expr, index);
+        } 
+        else if (match(TokenType.LEFT_PAREN)) {
+            List<Expr> arguments = new ArrayList<>();
 
-                if (!check(TokenType.RIGHT_PAREN)) {
-                    do {
-                        arguments.add(expression());
-                    } while (match(TokenType.COMMA));
-                }
-
-                consume(TokenType.RIGHT_PAREN, "Se esperaba ')' después de los argumentos.");
-
-                expr = new Expr.Call(expr, arguments);
-            } 
-            else {
-                break;
+            if (!check(TokenType.RIGHT_PAREN)) {
+                do {
+                    arguments.add(expression());
+                } while (match(TokenType.COMMA));
             }
-        }
 
-        return expr;
+            consume(TokenType.RIGHT_PAREN, "Se esperaba ')' después de los argumentos.");
+
+            expr = new Expr.Call(expr, arguments);
+        }
+        else if (match(TokenType.DOT)) {
+            Token methodName = consume(TokenType.IDENTIFIER, "Se esperaba nombre del método después de '.'.");
+
+            consume(TokenType.LEFT_PAREN, "Se esperaba '(' después del nombre del método.");
+
+            List<Expr> arguments = new ArrayList<>();
+
+            if (!check(TokenType.RIGHT_PAREN)) {
+                do {
+                    arguments.add(expression());
+                } while (match(TokenType.COMMA));
+            }
+
+            consume(TokenType.RIGHT_PAREN, "Se esperaba ')' después de los argumentos del método.");
+
+            expr = new Expr.MethodCall(expr, methodName.lexeme, arguments);
+        }
+        else {
+            break;
+        }
     }
+
+    return expr;
+}
 
     private Expr primary() {
         if (match(TokenType.NUMBER)) {

@@ -98,7 +98,9 @@ public class Lexer {
                 case ',':
                     addToken(TokenType.COMMA, ",");
                     break;
-
+                case '.':
+                    addToken(TokenType.DOT, ".");
+                    break;
                 case '[':
                     addToken(TokenType.LEFT_BRACKET, "[");
                     break;

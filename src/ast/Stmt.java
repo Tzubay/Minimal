@@ -14,6 +14,15 @@ public abstract class Stmt {
             this.value = value;
         }
     }
+
+    public static class Expression extends Stmt {
+        public final Expr expression;
+
+        public Expression(Expr expression) {
+            this.expression = expression;
+        }
+    }
+
     public static class Function extends Stmt {
         public final String name;
         public final List<String> params;

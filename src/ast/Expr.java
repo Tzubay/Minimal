@@ -13,6 +13,18 @@ public abstract class Expr {
         }
     }
 
+    public static class MethodCall extends Expr {
+        public final Expr object;
+        public final String methodName;
+        public final List<Expr> arguments;
+
+        public MethodCall(Expr object, String methodName, List<Expr> arguments) {
+            this.object = object;
+            this.methodName = methodName;
+            this.arguments = arguments;
+        }
+    }
+
     public static class FloatExpr extends Expr {
         public final double value;
 

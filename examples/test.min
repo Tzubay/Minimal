@@ -1,9 +1,8 @@
-let nombre = input("Escribe tu nombre: ");
-let edad = input("Escribe tu edad: ");
+let arr = [];
 
-let salida = ["Tu nombre es ", nombre, " y tu edad es ", edad];
+for (let i = 0; i < 2; i = i + 1) {
+    arr.append(i);
+}
 
-print salida;
-
-print "Cantidad de elementos del arreglo es: ", len(salida);
-print "Tu nombre es ", nombre, " y tu edad es ", edad;
+print arr;
+print len(arr);
