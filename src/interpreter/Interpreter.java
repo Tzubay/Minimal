@@ -3,12 +3,18 @@ package interpreter;
 import ast.*;
 import lexer.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class Interpreter {
-    private final Map<String, Value> variables = new HashMap<>();
+    private final List<Map<String, Value>> scopes = new ArrayList<>();
+    private final Map<String, FunctionValue> functions = new HashMap<>();
+
+    public Interpreter() {
+        scopes.add(new HashMap<>());
+    }
 
     public void interpret(List<Stmt> statements) {
         for (Stmt stmt : statements) {
@@ -16,39 +22,93 @@ public class Interpreter {
         }
     }
 
+    private Map<String, Value> currentScope() {
+        return scopes.get(scopes.size() - 1);
+    }
+
+    private boolean variableExistsInAnyScope(String name) {
+        for (int i = scopes.size() - 1; i >= 0; i--) {
+            if (scopes.get(i).containsKey(name)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private Value getVariable(String name) {
+        for (int i = scopes.size() - 1; i >= 0; i--) {
+            Map<String, Value> scope = scopes.get(i);
+
+            if (scope.containsKey(name)) {
+                return scope.get(name);
+            }
+        }
+
+        throw new RuntimeException("Variable no definida: " + name);
+    }
+
+    private void assignVariable(String name, Value newValue) {
+        for (int i = scopes.size() - 1; i >= 0; i--) {
+            Map<String, Value> scope = scopes.get(i);
+
+            if (scope.containsKey(name)) {
+                Value oldValue = scope.get(name);
+
+                if (oldValue.type != newValue.type) {
+                    throw new RuntimeException(
+                        "No se puede asignar " + newValue.type +
+                        " a variable " + oldValue.type +
+                        ": " + name
+                    );
+                }
+
+                scope.put(name, newValue);
+                return;
+            }
+        }
+
+        throw new RuntimeException("Variable no definida: " + name);
+    }
+
     private void execute(Stmt stmt) {
+
+        if (stmt instanceof Stmt.Function) {
+            Stmt.Function functionStmt = (Stmt.Function) stmt;
+
+            if (functions.containsKey(functionStmt.name)) {
+                throw new RuntimeException("La función ya existe: " + functionStmt.name);
+            }
+
+            functions.put(
+                functionStmt.name,
+                new FunctionValue(functionStmt.name, functionStmt.params, functionStmt.body)
+            );
+            return;
+        }
+
+        if (stmt instanceof Stmt.Return) {
+            Stmt.Return returnStmt = (Stmt.Return) stmt;
+            Value value = evaluate(returnStmt.value);
+            throw new ReturnException(value);
+        }
 
         if (stmt instanceof Stmt.Let) {
             Stmt.Let letStmt = (Stmt.Let) stmt;
 
-            if (variables.containsKey(letStmt.name)) {
-                throw new RuntimeException("La variable ya existe: " + letStmt.name);
+            if (currentScope().containsKey(letStmt.name)) {
+                throw new RuntimeException("La variable ya existe en este scope: " + letStmt.name);
             }
 
             Value value = evaluate(letStmt.value);
-            variables.put(letStmt.name, value);
+            currentScope().put(letStmt.name, value);
             return;
         }
 
         if (stmt instanceof Stmt.Assign) {
             Stmt.Assign assignStmt = (Stmt.Assign) stmt;
-
-            if (!variables.containsKey(assignStmt.name)) {
-                throw new RuntimeException("Variable no definida: " + assignStmt.name);
-            }
-
-            Value oldValue = variables.get(assignStmt.name);
             Value newValue = evaluate(assignStmt.value);
-
-            if (oldValue.type != newValue.type) {
-                throw new RuntimeException(
-                    "No se puede asignar " + newValue.type +
-                    " a variable " + oldValue.type +
-                    ": " + assignStmt.name
-                );
-            }
-
-            variables.put(assignStmt.name, newValue);
+            assignVariable(assignStmt.name, newValue);
             return;
         }
 
@@ -157,7 +217,7 @@ public class Interpreter {
         if (expr instanceof Expr.ArrayExpr) {
             Expr.ArrayExpr arrayExpr = (Expr.ArrayExpr) expr;
 
-            List<Value> elements = new java.util.ArrayList<>();
+            List<Value> elements = new ArrayList<>();
 
             for (Expr element : arrayExpr.elements) {
                 elements.add(evaluate(element));
@@ -192,12 +252,39 @@ public class Interpreter {
 
         if (expr instanceof Expr.Variable) {
             String name = ((Expr.Variable) expr).name;
+            return getVariable(name);
+        }
 
-            if (!variables.containsKey(name)) {
-                throw new RuntimeException("Variable no definida: " + name);
+        if (expr instanceof Expr.Call) {
+            Expr.Call callExpr = (Expr.Call) expr;
+
+            if (!(callExpr.callee instanceof Expr.Variable)) {
+                throw new RuntimeException("Solo se pueden llamar funciones por nombre.");
             }
 
-            return variables.get(name);
+            String functionName = ((Expr.Variable) callExpr.callee).name;
+
+            if (!functions.containsKey(functionName)) {
+                throw new RuntimeException("Función no definida: " + functionName);
+            }
+
+            FunctionValue function = functions.get(functionName);
+
+            if (callExpr.arguments.size() != function.params.size()) {
+                throw new RuntimeException(
+                    "La función " + functionName + " esperaba " +
+                    function.params.size() + " argumentos, pero recibió " +
+                    callExpr.arguments.size()
+                );
+            }
+
+            List<Value> argumentValues = new ArrayList<>();
+
+            for (Expr argument : callExpr.arguments) {
+                argumentValues.add(evaluate(argument));
+            }
+
+            return callFunction(function, argumentValues);
         }
 
         if (expr instanceof Expr.Binary) {
@@ -210,6 +297,29 @@ public class Interpreter {
         }
 
         throw new RuntimeException("Expresión no válida.");
+    }
+
+    private Value callFunction(FunctionValue function, List<Value> argumentValues) {
+        Map<String, Value> functionScope = new HashMap<>();
+
+        for (int i = 0; i < function.params.size(); i++) {
+            functionScope.put(function.params.get(i), argumentValues.get(i));
+        }
+
+        scopes.add(functionScope);
+
+        try {
+            for (Stmt stmt : function.body) {
+                execute(stmt);
+            }
+        } catch (ReturnException returnValue) {
+            scopes.remove(scopes.size() - 1);
+            return returnValue.value;
+        }
+
+        scopes.remove(scopes.size() - 1);
+
+        throw new RuntimeException("La función " + function.name + " no retornó ningún valor.");
     }
 
     private Value evaluateBinary(Value left, Token operator, Value right) {

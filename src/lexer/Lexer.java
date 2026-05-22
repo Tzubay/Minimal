@@ -196,6 +196,12 @@ public class Lexer {
             case "for":
                 addToken(TokenType.FOR, text);
                 break;
+            case "fn":
+                addToken(TokenType.FN, text);
+                break;
+            case "return":
+                addToken(TokenType.RETURN, text);
+                break;
             default:
                 addToken(TokenType.IDENTIFIER, text);
                 break;

@@ -7,6 +7,8 @@ public enum TokenType {
     ELSE,
     WHILE,
     FOR,
+    FN,
+    RETURN,
 
     IDENTIFIER,
     NUMBER,

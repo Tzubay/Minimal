@@ -1,17 +1,25 @@
-let arr1 = [
+fn suma(a, b) {
+    return a + b;
+}
 
-    [2, 0, 3], 
+fn saludar(nombre) {
+    return "Hola " + nombre;
+}
 
-    [0, 2, 7],
+fn obtenerValor(matriz, fila, columna) {
+    return matriz[fila][columna];
+}
 
-    [7, 1, 5]
+let resultado = suma(10, 5);
+print resultado;
 
+print suma(3, 4);
+print saludar("Minimal");
+
+let matriz = [
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
 ];
 
-print arr1[2][2];
-
-arr1[2][2] = 99;
-
-print arr1[2][2];
-
-print arr1;
+print obtenerValor(matriz, 2, 1);

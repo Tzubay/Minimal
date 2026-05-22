@@ -14,6 +14,25 @@ public abstract class Stmt {
             this.value = value;
         }
     }
+    public static class Function extends Stmt {
+        public final String name;
+        public final List<String> params;
+        public final List<Stmt> body;
+
+        public Function(String name, List<String> params, List<Stmt> body) {
+            this.name = name;
+            this.params = params;
+            this.body = body;
+        }
+    }
+
+    public static class Return extends Stmt {
+        public final Expr value;
+
+        public Return(Expr value) {
+            this.value = value;
+        }
+    }
 
     public static class Assign extends Stmt {
         public final String name;
@@ -24,7 +43,7 @@ public abstract class Stmt {
             this.value = value;
         }
     }
-    
+
 public static class IndexAssign extends Stmt {
     public final Expr array;
     public final Expr index;

@@ -45,8 +45,44 @@ public class Parser {
 
         throw new RuntimeException("Destino de asignación inválido.");
     }
+    private Stmt functionStatement() {
+        Token name = consume(TokenType.IDENTIFIER, "Se esperaba el nombre de la función.");
+
+        consume(TokenType.LEFT_PAREN, "Se esperaba '(' después del nombre de la función.");
+
+        List<String> params = new ArrayList<>();
+
+        if (!check(TokenType.RIGHT_PAREN)) {
+            do {
+                Token param = consume(TokenType.IDENTIFIER, "Se esperaba nombre del parámetro.");
+                params.add(param.lexeme);
+            } while (match(TokenType.COMMA));
+        }
+
+        consume(TokenType.RIGHT_PAREN, "Se esperaba ')' después de los parámetros.");
+        consume(TokenType.LEFT_BRACE, "Se esperaba '{' antes del cuerpo de la función.");
+
+        List<Stmt> body = block();
+
+        return new Stmt.Function(name.lexeme, params, body);
+    }
+private Stmt returnStatement() {
+    Expr value = expression();
+
+    consume(TokenType.SEMICOLON, "Se esperaba ';' después del return.");
+
+    return new Stmt.Return(value);
+}
 
     private Stmt statement() {
+
+        if (match(TokenType.FN)) {
+            return functionStatement();
+        }
+
+        if (match(TokenType.RETURN)) {
+            return returnStatement();
+        }
         if (match(TokenType.LET)) {
             return letStatement();
         }
@@ -266,7 +302,21 @@ public class Parser {
                 consume(TokenType.RIGHT_BRACKET, "Se esperaba ']' después del índice.");
 
                 expr = new Expr.Index(expr, index);
-            } else {
+            } 
+            else if (match(TokenType.LEFT_PAREN)) {
+                List<Expr> arguments = new ArrayList<>();
+
+                if (!check(TokenType.RIGHT_PAREN)) {
+                    do {
+                        arguments.add(expression());
+                    } while (match(TokenType.COMMA));
+                }
+
+                consume(TokenType.RIGHT_PAREN, "Se esperaba ')' después de los argumentos.");
+
+                expr = new Expr.Call(expr, arguments);
+            } 
+            else {
                 break;
             }
         }

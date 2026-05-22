@@ -45,15 +45,6 @@ public abstract class Expr {
         }
     }
 
-    public static class Index extends Expr {
-        public final Expr array;
-        public final Expr index;
-
-        public Index(Expr array, Expr index) {
-            this.array = array;
-            this.index = index;
-        }
-    }
 
     public static class Variable extends Expr {
         public final String name;
@@ -72,6 +63,25 @@ public abstract class Expr {
             this.left = left;
             this.operator = operator;
             this.right = right;
+        }
+    }
+    public static class Index extends Expr {
+        public final Expr array;
+        public final Expr index;
+
+        public Index(Expr array, Expr index) {
+            this.array = array;
+            this.index = index;
+        }
+    }
+
+    public static class Call extends Expr {
+        public final Expr callee;
+        public final List<Expr> arguments;
+
+        public Call(Expr callee, List<Expr> arguments) {
+            this.callee = callee;
+            this.arguments = arguments;
         }
     }
 }
