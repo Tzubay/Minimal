@@ -4,6 +4,7 @@ import java.util.List;
 
 public abstract class Stmt {
 
+
     public static class Let extends Stmt {
         public final String name;
         public final Expr value;
@@ -23,6 +24,18 @@ public abstract class Stmt {
             this.value = value;
         }
     }
+    
+public static class IndexAssign extends Stmt {
+    public final Expr array;
+    public final Expr index;
+    public final Expr value;
+
+    public IndexAssign(Expr array, Expr index, Expr value) {
+        this.array = array;
+        this.index = index;
+        this.value = value;
+    }
+}
 
     public static class Print extends Stmt {
         public final Expr expression;

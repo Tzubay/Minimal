@@ -52,6 +52,32 @@ public class Interpreter {
             return;
         }
 
+        if (stmt instanceof Stmt.IndexAssign) {
+            Stmt.IndexAssign indexAssign = (Stmt.IndexAssign) stmt;
+
+            Value arrayValue = evaluate(indexAssign.array);
+            Value indexValue = evaluate(indexAssign.index);
+            Value newValue = evaluate(indexAssign.value);
+
+            if (arrayValue.type != Value.Type.ARRAY) {
+                throw new RuntimeException("Solo se puede asignar por índice sobre un arreglo.");
+            }
+
+            if (indexValue.type != Value.Type.INT) {
+                throw new RuntimeException("El índice debe ser un entero.");
+            }
+
+            List<Value> elements = (List<Value>) arrayValue.value;
+            int index = (int) indexValue.value;
+
+            if (index < 0 || index >= elements.size()) {
+                throw new RuntimeException("Índice fuera de rango: " + index);
+            }
+
+            elements.set(index, newValue);
+            return;
+        }
+
         if (stmt instanceof Stmt.Print) {
             Stmt.Print printStmt = (Stmt.Print) stmt;
             Value value = evaluate(printStmt.expression);
@@ -139,7 +165,7 @@ public class Interpreter {
 
             return new Value(Value.Type.ARRAY, elements);
         }
-        
+
         if (expr instanceof Expr.Index) {
             Expr.Index indexExpr = (Expr.Index) expr;
 

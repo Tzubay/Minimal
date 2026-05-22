@@ -24,6 +24,28 @@ public class Parser {
         return statements;
     }
 
+    private Stmt assignmentStatement() {
+        Expr target = postfix();
+
+        consume(TokenType.EQUAL, "Se esperaba '=' en la asignación.");
+
+        Expr value = expression();
+
+        consume(TokenType.SEMICOLON, "Se esperaba ';' al final de la asignación.");
+
+        if (target instanceof Expr.Variable) {
+            Expr.Variable variable = (Expr.Variable) target;
+            return new Stmt.Assign(variable.name, value);
+        }
+
+        if (target instanceof Expr.Index) {
+            Expr.Index indexExpr = (Expr.Index) target;
+            return new Stmt.IndexAssign(indexExpr.array, indexExpr.index, value);
+        }
+
+        throw new RuntimeException("Destino de asignación inválido.");
+    }
+
     private Stmt statement() {
         if (match(TokenType.LET)) {
             return letStatement();
@@ -49,8 +71,8 @@ public class Parser {
             return new Stmt.Block(block());
         }
 
-        if (check(TokenType.IDENTIFIER) && checkNext(TokenType.EQUAL)) {
-            return assignStatement();
+        if (check(TokenType.IDENTIFIER)) {
+            return assignmentStatement();
         }
 
         throw new RuntimeException("Se esperaba una instrucción.");
@@ -134,11 +156,22 @@ public class Parser {
 
         Stmt increment;
 
-        if (check(TokenType.IDENTIFIER) && checkNext(TokenType.EQUAL)) {
-            Token name = consume(TokenType.IDENTIFIER, "Se esperaba variable en incremento.");
+        if (check(TokenType.IDENTIFIER)) {
+            Expr target = postfix();
+
             consume(TokenType.EQUAL, "Se esperaba '=' en incremento.");
+
             Expr value = expression();
-            increment = new Stmt.Assign(name.lexeme, value);
+
+            if (target instanceof Expr.Variable) {
+                Expr.Variable variable = (Expr.Variable) target;
+                increment = new Stmt.Assign(variable.name, value);
+            } else if (target instanceof Expr.Index) {
+                Expr.Index indexExpr = (Expr.Index) target;
+                increment = new Stmt.IndexAssign(indexExpr.array, indexExpr.index, value);
+            } else {
+                throw new RuntimeException("Incremento inválido en el for.");
+            }
         } else {
             throw new RuntimeException("Se esperaba incremento en el for.");
         }
