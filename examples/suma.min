@@ -10,3 +10,9 @@ let inicio = input("Escribe el numero de inicio: ");
 let final = input("Escribe el numero final: ");
 
 print CICLO(inicio, final);
+
+[
+    [[],[],[]],
+    [[],[],[]],
+    [[],[],[]]
+]

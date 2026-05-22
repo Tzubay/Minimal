@@ -10,7 +10,8 @@ public class Value {
         FLOAT,
         STRING,
         BOOLEAN,
-        ARRAY
+        ARRAY,
+        UNDEFINED
     }
 
     public final Type type;
@@ -23,6 +24,9 @@ public class Value {
 
     @Override
     public String toString() {
+        if (type == Type.UNDEFINED) {
+            return "undefined";
+        }
         if (type == Type.ARRAY) {
             List<Value> values = (List<Value>) value;
 

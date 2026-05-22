@@ -2,8 +2,19 @@ package ast;
 
 import java.util.List;
 
+
 public abstract class Stmt {
 
+
+public static class SwitchCase {
+    public final Expr value;
+    public final List<Stmt> statements;
+
+    public SwitchCase(Expr value, List<Stmt> statements) {
+        this.value = value;
+        this.statements = statements;
+    }
+}
 
     public static class Let extends Stmt {
         public final String name;
@@ -72,6 +83,17 @@ public static class IndexAssign extends Stmt {
             this.expressions = expressions;
         }
     }
+    public static class Switch extends Stmt {
+        public final Expr condition;
+        public final List<SwitchCase> cases;
+        public final List<Stmt> defaultStatements;
+
+        public Switch(Expr condition, List<SwitchCase> cases, List<Stmt> defaultStatements) {
+            this.condition = condition;
+            this.cases = cases;
+            this.defaultStatements = defaultStatements;
+        }
+    }
 
     public static class Block extends Stmt {
         public final List<Stmt> statements;
@@ -79,6 +101,9 @@ public static class IndexAssign extends Stmt {
         public Block(List<Stmt> statements) {
             this.statements = statements;
         }
+    }
+    public static class Break extends Stmt {
+        public Break() {}
     }
 
     public static class If extends Stmt {

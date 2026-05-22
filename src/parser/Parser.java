@@ -10,31 +10,6 @@ public class Parser {
     private final List<Token> tokens;
     private int current = 0;
 
-private Stmt expressionStatement() {
-    Expr expr = expression();
-
-    if (match(TokenType.EQUAL)) {
-        Expr value = expression();
-
-        consume(TokenType.SEMICOLON, "Se esperaba ';' al final de la asignación.");
-
-        if (expr instanceof Expr.Variable) {
-            Expr.Variable variable = (Expr.Variable) expr;
-            return new Stmt.Assign(variable.name, value);
-        }
-
-        if (expr instanceof Expr.Index) {
-            Expr.Index indexExpr = (Expr.Index) expr;
-            return new Stmt.IndexAssign(indexExpr.array, indexExpr.index, value);
-        }
-
-        throw new RuntimeException("Destino de asignación inválido.");
-    }
-
-    consume(TokenType.SEMICOLON, "Se esperaba ';' al final de la expresión.");
-
-    return new Stmt.Expression(expr);
-}
     public Parser(List<Token> tokens) {
         this.tokens = tokens;
     }
@@ -49,65 +24,135 @@ private Stmt expressionStatement() {
         return statements;
     }
 
-    private Stmt assignmentStatement() {
-        Expr target = postfix();
+    private Stmt expressionStatement() {
+        Expr expr = expression();
 
-        consume(TokenType.EQUAL, "Se esperaba '=' en la asignación.");
+        if (match(TokenType.EQUAL)) {
+            Expr value = expression();
 
-        Expr value = expression();
+            consume(TokenType.SEMICOLON, "Se esperaba ';' al final de la asignación.");
 
-        consume(TokenType.SEMICOLON, "Se esperaba ';' al final de la asignación.");
+            if (expr instanceof Expr.Variable) {
+                Expr.Variable variable = (Expr.Variable) expr;
+                return new Stmt.Assign(variable.name, value);
+            }
 
-        if (target instanceof Expr.Variable) {
-            Expr.Variable variable = (Expr.Variable) target;
-            return new Stmt.Assign(variable.name, value);
+            if (expr instanceof Expr.Index) {
+                Expr.Index indexExpr = (Expr.Index) expr;
+                return new Stmt.IndexAssign(indexExpr.array, indexExpr.index, value);
+            }
+
+            throw new RuntimeException("Destino de asignación inválido.");
         }
 
-        if (target instanceof Expr.Index) {
-            Expr.Index indexExpr = (Expr.Index) target;
-            return new Stmt.IndexAssign(indexExpr.array, indexExpr.index, value);
-        }
+        consume(TokenType.SEMICOLON, "Se esperaba ';' al final de la expresión.");
 
-        throw new RuntimeException("Destino de asignación inválido.");
+        return new Stmt.Expression(expr);
     }
-    private Stmt functionStatement() {
-        Token name = consume(TokenType.IDENTIFIER, "Se esperaba el nombre de la función.");
 
-        consume(TokenType.LEFT_PAREN, "Se esperaba '(' después del nombre de la función.");
+    private Stmt breakStatement() {
+        consume(TokenType.SEMICOLON, "Se esperaba ';' después de break.");
+        return new Stmt.Break();
+    }
 
-        List<String> params = new ArrayList<>();
+    private Stmt switchStatement() {
+        consume(TokenType.LEFT_PAREN, "Se esperaba '(' después de switch.");
 
-        if (!check(TokenType.RIGHT_PAREN)) {
-            do {
-                Token param = consume(TokenType.IDENTIFIER, "Se esperaba nombre del parámetro.");
-                params.add(param.lexeme);
-            } while (match(TokenType.COMMA));
+        Expr condition = expression();
+
+        consume(TokenType.RIGHT_PAREN, "Se esperaba ')' después de la expresión del switch.");
+        consume(TokenType.LEFT_BRACE, "Se esperaba '{' después del switch.");
+
+        List<Stmt.SwitchCase> cases = new ArrayList<>();
+        List<Stmt> defaultStatements = null;
+
+        while (!check(TokenType.RIGHT_BRACE) && !isAtEnd()) {
+
+            if (match(TokenType.CASE)) {
+                Expr caseValue = expression();
+
+                consume(TokenType.COLON, "Se esperaba ':' después del case.");
+
+                List<Stmt> statements = new ArrayList<>();
+
+                while (
+                    !check(TokenType.CASE) &&
+                    !check(TokenType.DEFAULT) &&
+                    !check(TokenType.RIGHT_BRACE) &&
+                    !isAtEnd()
+                ) {
+                    statements.add(statement());
+                }
+
+                cases.add(new Stmt.SwitchCase(caseValue, statements));
+            }
+            else if (match(TokenType.DEFAULT)) {
+                consume(TokenType.COLON, "Se esperaba ':' después de default.");
+
+                defaultStatements = new ArrayList<>();
+
+                while (
+                    !check(TokenType.CASE) &&
+                    !check(TokenType.RIGHT_BRACE) &&
+                    !isAtEnd()
+                ) {
+                    defaultStatements.add(statement());
+                }
+            }
+            else {
+                throw new RuntimeException("Se esperaba 'case', 'default' o '}' dentro del switch.");
+            }
         }
 
-        consume(TokenType.RIGHT_PAREN, "Se esperaba ')' después de los parámetros.");
-        consume(TokenType.LEFT_BRACE, "Se esperaba '{' antes del cuerpo de la función.");
+        consume(TokenType.RIGHT_BRACE, "Se esperaba '}' al final del switch.");
 
-        List<Stmt> body = block();
-
-        return new Stmt.Function(name.lexeme, params, body);
+        return new Stmt.Switch(condition, cases, defaultStatements);
     }
-    
-    private Stmt returnStatement() {
-        List<Expr> values = new ArrayList<>();
+private Stmt functionStatement() {
+    Token name = consume(TokenType.IDENTIFIER, "Se esperaba el nombre de la función.");
 
+    consume(TokenType.LEFT_PAREN, "Se esperaba '(' después del nombre de la función.");
+
+    List<String> params = new ArrayList<>();
+
+    if (!check(TokenType.RIGHT_PAREN)) {
+        do {
+            Token param = consume(TokenType.IDENTIFIER, "Se esperaba nombre del parámetro.");
+            params.add(param.lexeme);
+        } while (match(TokenType.COMMA));
+    }
+
+    consume(TokenType.RIGHT_PAREN, "Se esperaba ')' después de los parámetros.");
+    consume(TokenType.LEFT_BRACE, "Se esperaba '{' antes del cuerpo de la función.");
+
+    List<Stmt> body = block();
+
+    return new Stmt.Function(name.lexeme, params, body);
+}
+
+private Stmt returnStatement() {
+    List<Expr> values = new ArrayList<>();
+
+    values.add(expression());
+
+    while (match(TokenType.COMMA)) {
         values.add(expression());
-
-        while (match(TokenType.COMMA)) {
-            values.add(expression());
-        }
-
-        consume(TokenType.SEMICOLON, "Se esperaba ';' después del return.");
-
-        return new Stmt.Return(values);
     }
+
+    consume(TokenType.SEMICOLON, "Se esperaba ';' después del return.");
+
+    return new Stmt.Return(values);
+}
 
     private Stmt statement() {
 
+        if (match(TokenType.SWITCH)) {
+            return switchStatement();
+        }
+
+        if (match(TokenType.BREAK)) {
+            return breakStatement();
+        }
         if (match(TokenType.FN)) {
             return functionStatement();
         }
@@ -150,9 +195,11 @@ private Stmt expressionStatement() {
     private Stmt letStatement() {
         Token name = consume(TokenType.IDENTIFIER, "Se esperaba el nombre de la variable.");
 
-        consume(TokenType.EQUAL, "Se esperaba '=' después del nombre.");
+        Expr value = null;
 
-        Expr value = expression();
+        if (match(TokenType.EQUAL)) {
+            value = expression();
+        }
 
         consume(TokenType.SEMICOLON, "Se esperaba ';' al final.");
 

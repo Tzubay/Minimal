@@ -56,13 +56,13 @@ public class Interpreter {
             if (scope.containsKey(name)) {
                 Value oldValue = scope.get(name);
 
-                if (oldValue.type != newValue.type) {
-                    throw new RuntimeException(
-                        "No se puede asignar " + newValue.type +
-                        " a variable " + oldValue.type +
-                        ": " + name
-                    );
-                }
+            if (oldValue.type != Value.Type.UNDEFINED && oldValue.type != newValue.type) {
+                throw new RuntimeException(
+                    "No se puede asignar " + newValue.type +
+                    " a variable " + oldValue.type +
+                    ": " + name
+                );
+            }
 
                 scope.put(name, newValue);
                 return;
@@ -73,7 +73,9 @@ public class Interpreter {
     }
 
     private void execute(Stmt stmt) {
-
+        if (stmt instanceof Stmt.Break) {
+            throw new BreakException();
+        }
         if (stmt instanceof Stmt.Function) {
             Stmt.Function functionStmt = (Stmt.Function) stmt;
 
@@ -115,8 +117,15 @@ public class Interpreter {
                 throw new RuntimeException("La variable ya existe en este scope: " + letStmt.name);
             }
 
-            Value value = evaluate(letStmt.value);
-            currentScope().put(letStmt.name, value);
+        Value value;
+
+        if (letStmt.value == null) {
+            value = new Value(Value.Type.UNDEFINED, null);
+        } else {
+            value = evaluate(letStmt.value);
+        }
+
+        currentScope().put(letStmt.name, value);
             return;
         }
 
@@ -207,7 +216,11 @@ public class Interpreter {
                     break;
                 }
 
-                execute(whileStmt.body);
+                try {
+                    execute(whileStmt.body);
+                } catch (BreakException breakException) {
+                    break;
+                }
             }
 
             return;
@@ -215,6 +228,40 @@ public class Interpreter {
         if (stmt instanceof Stmt.Expression) {
             Stmt.Expression exprStmt = (Stmt.Expression) stmt;
             evaluate(exprStmt.expression);
+            return;
+        }
+
+        if (stmt instanceof Stmt.Switch) {
+            Stmt.Switch switchStmt = (Stmt.Switch) stmt;
+
+            Value conditionValue = evaluate(switchStmt.condition);
+
+            boolean executed = false;
+
+            try {
+                for (Stmt.SwitchCase switchCase : switchStmt.cases) {
+                    Value caseValue = evaluate(switchCase.value);
+
+                    if (valuesEqual(conditionValue, caseValue)) {
+                        for (Stmt caseStmt : switchCase.statements) {
+                            execute(caseStmt);
+                        }
+
+                        executed = true;
+                        break;
+                    }
+                }
+
+                if (!executed && switchStmt.defaultStatements != null) {
+                    for (Stmt defaultStmt : switchStmt.defaultStatements) {
+                        execute(defaultStmt);
+                    }
+                }
+
+            } catch (BreakException breakException) {
+                // break solo sale del switch
+            }
+
             return;
         }
         throw new RuntimeException("Instrucción no válida.");
@@ -490,7 +537,17 @@ private Value arrayAppend(Value arrayValue, List<Value> arguments) {
 
     return arrayValue;
 }
+    private boolean valuesEqual(Value a, Value b) {
+        if (a.type != b.type) {
+            return false;
+        }
 
+        if (a.type == Value.Type.UNDEFINED) {
+            return b.type == Value.Type.UNDEFINED;
+        }
+
+        return a.value.equals(b.value);
+    }
     private Value evaluateBinary(Value left, Token operator, Value right) {
         switch (operator.type) {
 

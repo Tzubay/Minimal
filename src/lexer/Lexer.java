@@ -101,6 +101,9 @@ public class Lexer {
                 case '.':
                     addToken(TokenType.DOT, ".");
                     break;
+                case ':':
+                    addToken(TokenType.COLON, ":");
+                    break;
                 case '[':
                     addToken(TokenType.LEFT_BRACKET, "[");
                     break;
@@ -166,6 +169,7 @@ public class Lexer {
 
     private void identifier(char firstChar) {
 
+
         StringBuilder builder = new StringBuilder();
         builder.append(firstChar);
 
@@ -192,6 +196,18 @@ public class Lexer {
             case "else":
                 addToken(TokenType.ELSE, text);
                 break;
+        case "switch":
+            addToken(TokenType.SWITCH, text);
+            break;
+        case "case":
+            addToken(TokenType.CASE, text);
+            break;
+        case "default":
+            addToken(TokenType.DEFAULT, text);
+            break;
+        case "break":
+            addToken(TokenType.BREAK, text);
+            break;
             case "while":
                 addToken(TokenType.WHILE, text);
                 break;

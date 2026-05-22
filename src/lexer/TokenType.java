@@ -9,6 +9,11 @@ public enum TokenType {
     FOR,
     FN,
     RETURN,
+    SWITCH,
+    CASE,
+    DEFAULT,
+    BREAK,
+    COLON,
 
     IDENTIFIER,
     NUMBER,
