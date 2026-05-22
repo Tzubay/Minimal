@@ -45,6 +45,16 @@ public abstract class Expr {
         }
     }
 
+    public static class Index extends Expr {
+        public final Expr array;
+        public final Expr index;
+
+        public Index(Expr array, Expr index) {
+            this.array = array;
+            this.index = index;
+        }
+    }
+
     public static class Variable extends Expr {
         public final String name;
 

@@ -1,15 +1,5 @@
-let num = 4;
+let arr1 = [[2, 0, 3], 
+            [0, 2, 7],
+            [7, 1, 5]];
 
-for (let i = 0; i < num; i = i + 1) {
-    print ["este pedo se esta imprimiento", i]; print i;
-}
-
-
-let x = 0;
-while x < 5 {
-
-    print "cola";
-
-    x = x + 1;
-
-}
+print arr1 [2][2];

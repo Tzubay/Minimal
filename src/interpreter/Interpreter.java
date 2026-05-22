@@ -139,6 +139,30 @@ public class Interpreter {
 
             return new Value(Value.Type.ARRAY, elements);
         }
+        
+        if (expr instanceof Expr.Index) {
+            Expr.Index indexExpr = (Expr.Index) expr;
+
+            Value arrayValue = evaluate(indexExpr.array);
+            Value indexValue = evaluate(indexExpr.index);
+
+            if (arrayValue.type != Value.Type.ARRAY) {
+                throw new RuntimeException("Solo se puede indexar un arreglo.");
+            }
+
+            if (indexValue.type != Value.Type.INT) {
+                throw new RuntimeException("El índice debe ser un entero.");
+            }
+
+            List<Value> elements = (List<Value>) arrayValue.value;
+            int index = (int) indexValue.value;
+
+            if (index < 0 || index >= elements.size()) {
+                throw new RuntimeException("Índice fuera de rango: " + index);
+            }
+
+            return elements.get(index);
+        }
 
         if (expr instanceof Expr.Variable) {
             String name = ((Expr.Variable) expr).name;

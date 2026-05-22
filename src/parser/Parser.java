@@ -214,12 +214,28 @@ public class Parser {
     }
 
     private Expr multiplication() {
-        Expr expr = primary();
+        Expr expr = postfix();
 
         while (match(TokenType.STAR, TokenType.SLASH)) {
             Token operator = previous();
-            Expr right = primary();
+            Expr right = postfix();
             expr = new Expr.Binary(expr, operator, right);
+        }
+
+        return expr;
+    }
+    private Expr postfix() {
+        Expr expr = primary();
+
+        while (true) {
+            if (match(TokenType.LEFT_BRACKET)) {
+                Expr index = expression();
+                consume(TokenType.RIGHT_BRACKET, "Se esperaba ']' después del índice.");
+
+                expr = new Expr.Index(expr, index);
+            } else {
+                break;
+            }
         }
 
         return expr;
@@ -258,7 +274,6 @@ public class Parser {
 
         throw new RuntimeException("Se esperaba un número, string, booleano, arreglo, variable o expresión entre paréntesis.");
     }
-    
     private Expr arrayLiteral() {
         List<Expr> elements = new ArrayList<>();
 
