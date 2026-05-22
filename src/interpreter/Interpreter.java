@@ -2,7 +2,7 @@ package interpreter;
 
 import ast.*;
 import lexer.*;
-
+import java.util.Scanner;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -11,6 +11,7 @@ import java.util.Map;
 public class Interpreter {
     private final List<Map<String, Value>> scopes = new ArrayList<>();
     private final Map<String, FunctionValue> functions = new HashMap<>();
+    private final Scanner scanner = new Scanner(System.in);
 
     public Interpreter() {
         scopes.add(new HashMap<>());
@@ -264,24 +265,28 @@ public class Interpreter {
 
             String functionName = ((Expr.Variable) callExpr.callee).name;
 
+            List<Value> argumentValues = new ArrayList<>();
+
+            for (Expr argument : callExpr.arguments) {
+                argumentValues.add(evaluate(argument));
+            }
+
+            if (isNativeFunction(functionName)) {
+                return callNativeFunction(functionName, argumentValues);
+            }
+
             if (!functions.containsKey(functionName)) {
                 throw new RuntimeException("Función no definida: " + functionName);
             }
 
             FunctionValue function = functions.get(functionName);
 
-            if (callExpr.arguments.size() != function.params.size()) {
+            if (argumentValues.size() != function.params.size()) {
                 throw new RuntimeException(
                     "La función " + functionName + " esperaba " +
                     function.params.size() + " argumentos, pero recibió " +
-                    callExpr.arguments.size()
+                    argumentValues.size()
                 );
-            }
-
-            List<Value> argumentValues = new ArrayList<>();
-
-            for (Expr argument : callExpr.arguments) {
-                argumentValues.add(evaluate(argument));
             }
 
             return callFunction(function, argumentValues);
@@ -322,6 +327,100 @@ public class Interpreter {
         throw new RuntimeException("La función " + function.name + " no retornó ningún valor.");
     }
 
+    private boolean isNativeFunction(String name) {
+        return name.equals("input") || name.equals("len");
+    }
+
+    private Value callNativeFunction(String name, List<Value> arguments) {
+        switch (name) {
+            case "input":
+                return nativeInput(arguments);
+
+            case "len":
+                return nativeLen(arguments);
+
+            default:
+                throw new RuntimeException("Función nativa no definida: " + name);
+        }
+    }
+
+    private Value nativeInput(List<Value> arguments) {
+        if (arguments.size() > 1) {
+            throw new RuntimeException("input() recibe máximo 1 argumento.");
+        }
+
+        if (arguments.size() == 1) {
+            Value prompt = arguments.get(0);
+
+            if (prompt.type != Value.Type.STRING) {
+                throw new RuntimeException("El argumento de input() debe ser STRING.");
+            }
+
+            System.out.print(prompt.value.toString());
+        }
+
+        String text = scanner.nextLine();
+
+        return inferInputValue(text);
+    }
+
+    private Value inferInputValue(String text) {
+        if (text.equals("true")) {
+            return new Value(Value.Type.BOOLEAN, true);
+        }
+
+        if (text.equals("false")) {
+            return new Value(Value.Type.BOOLEAN, false);
+        }
+
+        if (isInteger(text)) {
+            return new Value(Value.Type.INT, Integer.parseInt(text));
+        }
+
+        if (isFloat(text)) {
+            return new Value(Value.Type.FLOAT, Double.parseDouble(text));
+        }
+
+        return new Value(Value.Type.STRING, text);
+    }
+
+    private boolean isInteger(String text) {
+        try {
+            Integer.parseInt(text);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private boolean isFloat(String text) {
+        try {
+            Double.parseDouble(text);
+            return text.contains(".");
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private Value nativeLen(List<Value> arguments) {
+        if (arguments.size() != 1) {
+            throw new RuntimeException("len() recibe exactamente 1 argumento.");
+        }
+
+        Value value = arguments.get(0);
+
+        if (value.type == Value.Type.ARRAY) {
+            List<Value> elements = (List<Value>) value.value;
+            return new Value(Value.Type.INT, elements.size());
+        }
+
+        if (value.type == Value.Type.STRING) {
+            String text = (String) value.value;
+            return new Value(Value.Type.INT, text.length());
+        }
+
+        throw new RuntimeException("len() solo funciona con ARRAY o STRING.");
+    }
     private Value evaluateBinary(Value left, Token operator, Value right) {
         switch (operator.type) {
 
