@@ -1,12 +1,27 @@
+
+print "===IF===";
+//Here we defined a variable
 let y = 6;
+
+//Structure if 
+
+//If the variable y is less than or equal to 5, then...
 
 if (y <= 5){
     print "es menor o igual que 5";
 }
+//If not...
 else{
     print "es mayor que 5";
 }
-
+print "===SWITCH===";
+// Structure Switch
+/*
+Here we need a variable c with the numeric value 5. 
+We use this variable as input for the switch statement. 
+The switch looks for the value that matches the one defined in the "cases" and executes its corresponding instruction. 
+If the value is not defined in one of the cases, then it goes to the default case and executes its contents.
+*/
 let c = 5;
 switch (c){
     case 1:
@@ -17,3 +32,26 @@ switch (c){
         break;
 }
 
+/*
+FOR loop structure.
+
+It works by defining a variable i, defining the endpoint of the loop, and defining the step size 
+(how much it will increase with each iteration).
+*/
+print "===FOR===";
+for (let i = 0; i <= 5; i = i + 1){
+    print i;
+}
+
+/*
+WHILE Structure
+The while loop works by defining a variable outside, 
+and inside the parentheses in while you write how far that variable should go to end, 
+and inside the while loop it increments in each iteration until it ends.
+*/
+print "===WHILE===";
+let r = 1;
+while (r < 10){
+    print r;
+    r = r + 1;
+}
