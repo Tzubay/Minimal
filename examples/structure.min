@@ -1,0 +1,19 @@
+let y = 6;
+
+if (y <= 5){
+    print "es menor o igual que 5";
+}
+else{
+    print "es mayor que 5";
+}
+
+let c = 5;
+switch (c){
+    case 1:
+        print "es 1 we";
+        break;
+    default:
+        print "mamo";
+        break;
+}
+

@@ -42,8 +42,54 @@ minimal file.min
 
 ### Extension
 
-Our extension is .min. All files of Minimal need the extension .min
+Our extension is .min All files of Minimal need the extension .min
 
 ### Typing
 Typing. Our typing is **_STATIC_**, But we used a Typing similar to Dynamic.
 Inside the Typing Behaves is Static, let v = 2; Is a Integer  and let h = "Hi"; is a String
+
+### Variables
+The variables work like this:
+We used the reservated word *let*
+
+#### Sintax
+let «var_name» = «Value»;
+Por example
+
+’’’
+let num1 = 2;
+let Fword = "Hi";
+let isTrue = true;
+let decim = 3.1415;
+let arr = [];
+'''
+
+You can see the file *vars.min* in the folder _examples_
+
+### Operations 
+
+’’’
+let num1 = 5;
+let num2 = 5;
+let sum = num1 + num2;
+let text1 = "===Sumes===";
+print text1;
+print sum;
+print num1, " + ", num2, " = ", num1 + num2;
+
+let decim1 = 2.234;
+let decim2 = 3.1416;
+let multi = decim1 * decim2;
+let text2 = "===Multiplications===";
+print text2;
+print decim1, " * ", decim2, " = ", decim1 * decim2;
+
+print "===Divicion===";
+print num1, " / ", decim2, " = ", num1 / decim2;
+
+print "===Rest===";
+print num1, " - ", decim1, " = ", num1 - decim1;
+'''
+
+### structure 
+

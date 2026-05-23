@@ -1,0 +1,9 @@
+
+let num1 = 5;
+let Fword = "Hi";
+let isTrue = true;
+let decim = 3.1415;
+let arr = [];
+
+
+print num1, Fword, isTrue, decim, arr;

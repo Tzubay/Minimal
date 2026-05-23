@@ -521,10 +521,24 @@ private Value callModuleMethod(String moduleName, String methodName, List<Value>
             throw new RuntimeException("Módulo no encontrado: " + moduleName);
     }
 }
+
+private Value nativeTime(List<Value> arguments) {
+    if (arguments.size() != 0) {
+        throw new RuntimeException("time.time() no recibe argumentos.");
+    }
+
+    double seconds = System.currentTimeMillis() / 1000.0;
+
+    return new Value(Value.Type.FLOAT, seconds);
+}
+
 private Value callTimeModule(String methodName, List<Value> arguments) {
     switch (methodName) {
         case "sleep":
             return nativeSleep(arguments);
+
+        case "time":
+            return nativeTime(arguments);
 
         default:
             throw new RuntimeException("El módulo time no tiene método: " + methodName);
@@ -765,6 +779,7 @@ private Value nativeSleep(List<Value> arguments) {
 
     return new Value(Value.Type.UNDEFINED, null);
 }
+
 
 
 private Value callMethod(Value object, String methodName, List<Value> arguments) {

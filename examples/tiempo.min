@@ -1,0 +1,96 @@
+import time;
+import threading;
+
+/*
+    Genera una matriz n x n usando 8 hilos.
+
+    Cada hilo llena un rango de filas.
+    La matriz se preconstruye con filas vacías.
+*/
+
+fn prepararFilas(matriz, n) {
+    for (let i = 0; i < n; i = i + 1) {
+        matriz.append([]);
+    }
+
+    return "filas preparadas";
+}
+
+fn llenarChunk(matriz, inicio, fin, n, idHilo) {
+    print "Hilo ", idHilo, " llenando filas ", inicio, " a ", fin - 1;
+
+    for (let fila = inicio; fila < fin; fila = fila + 1) {
+        for (let columna = 0; columna < n; columna = columna + 1) {
+            matriz[fila].append(fila + columna);
+        }
+    }
+
+    print "Hilo ", idHilo, " terminó";
+    return "ok";
+}
+
+let n = 1000;
+let hilos = 8;
+let chunk = n / hilos;
+
+let matriz = [];
+
+print "Preparando matriz de ", n, " x ", n;
+print "Usando ", hilos, " hilos";
+
+let inicioTotal = time.time();
+
+let inicioPreparacion = time.time();
+prepararFilas(matriz, n);
+let finPreparacion = time.time();
+
+print "Filas preparadas en: ", finPreparacion - inicioPreparacion, " segundos";
+
+let inicioLlenado = time.time();
+
+let h1 = threading.thread(llenarChunk, matriz, 0, chunk, n, 1);
+let h2 = threading.thread(llenarChunk, matriz, chunk, chunk * 2, n, 2);
+let h3 = threading.thread(llenarChunk, matriz, chunk * 2, chunk * 3, n, 3);
+let h4 = threading.thread(llenarChunk, matriz, chunk * 3, chunk * 4, n, 4);
+let h5 = threading.thread(llenarChunk, matriz, chunk * 4, chunk * 5, n, 5);
+let h6 = threading.thread(llenarChunk, matriz, chunk * 5, chunk * 6, n, 6);
+let h7 = threading.thread(llenarChunk, matriz, chunk * 6, chunk * 7, n, 7);
+let h8 = threading.thread(llenarChunk, matriz, chunk * 7, n, n, 8);
+
+threading.start(h1);
+threading.start(h2);
+threading.start(h3);
+threading.start(h4);
+threading.start(h5);
+threading.start(h6);
+threading.start(h7);
+threading.start(h8);
+
+threading.join(h1);
+threading.join(h2);
+threading.join(h3);
+threading.join(h4);
+threading.join(h5);
+threading.join(h6);
+threading.join(h7);
+threading.join(h8);
+
+let finLlenado = time.time();
+let finTotal = time.time();
+
+print "";
+print "Matriz generada.";
+print "Filas: ", len(matriz);
+print "Columnas fila 0: ", len(matriz[0]);
+print "Columnas última fila: ", len(matriz[n - 1]);
+
+print "";
+print "Pruebas de valores:";
+print "matriz[0][0] = ", matriz[0][0];
+print "matriz[0][1] = ", matriz[0][1];
+print "matriz[10][10] = ", matriz[10][10];
+print "matriz[n-1][n-1] = ", matriz[n - 1][n - 1];
+
+print "";
+print "Tiempo de llenado paralelo: ", finLlenado - inicioLlenado, " segundos";
+print "Tiempo total: ", finTotal - inicioTotal, " segundos";

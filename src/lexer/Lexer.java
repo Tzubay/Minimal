@@ -51,7 +51,13 @@ public class Lexer {
                     addToken(TokenType.STAR, "*");
                     break;
                 case '/':
-                    addToken(TokenType.SLASH, "/");
+                    if (match('/')) {
+                        lineComment();
+                    } else if (match('*')) {
+                        blockComment();
+                    } else {
+                        addToken(TokenType.SLASH, "/");
+                    }
                     break;
           //      case '=':
           //          addToken(TokenType.EQUAL, "=");
@@ -107,7 +113,6 @@ public class Lexer {
                 case '[':
                     addToken(TokenType.LEFT_BRACKET, "[");
                     break;
-
                 case ']':
                     addToken(TokenType.RIGHT_BRACKET, "]");
                     break;
@@ -242,7 +247,31 @@ public class Lexer {
     private void addToken(TokenType type, String lexeme) {
         tokens.add(new Token(type, lexeme));
     }
+    private void lineComment() {
+        while (!isAtEnd() && peek() != '\n') {
+            advance();
+        }
+    }
+    private void blockComment() {
+        while (!isAtEnd()) {
+            if (peek() == '*' && peekNext() == '/') {
+                advance(); // consume *
+                advance(); // consume /
+                return;
+            }
 
+            advance();
+        }
+
+        throw new RuntimeException("Comentario de bloque sin cerrar.");
+    }
+    private char peekNext() {
+        if (current + 1 >= source.length()) {
+            return '\0';
+        }
+
+        return source.charAt(current + 1);
+    }
     private boolean isDigit(char c) {
         return c >= '0' && c <= '9';
     }
