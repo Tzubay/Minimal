@@ -517,6 +517,9 @@ private Value callModuleMethod(String moduleName, String methodName, List<Value>
         case "threading":
             return callThreadingModule(methodName, arguments);
 
+        case "matrix":
+            return callMatrixModule(methodName, arguments);
+
         default:
             throw new RuntimeException("Módulo no encontrado: " + moduleName);
     }
@@ -555,6 +558,34 @@ private Value callThreadingModule(String methodName, List<Value> arguments) {
 
         default:
             throw new RuntimeException("El módulo threading no tiene método: " + methodName);
+    }
+}
+
+private Value callMatrixModule(String methodName, List<Value> arguments) {
+    switch (methodName) {
+        case "int":
+            return matrixInt(arguments);
+
+        case "fill_parallel":
+            return matrixFillParallel(arguments);
+
+        case "get":
+            return matrixGet(arguments);
+
+        case "set":
+            return matrixSet(arguments);
+
+        case "rows":
+            return matrixRows(arguments);
+
+        case "cols":
+            return matrixCols(arguments);
+
+        case "print_sample":
+            return matrixPrintSample(arguments);
+
+        default:
+            throw new RuntimeException("El módulo matrix no tiene método: " + methodName);
     }
 }
 
@@ -697,7 +728,8 @@ private Value nativeThread(List<Expr> rawArguments) {
 
 private boolean isKnownModule(String name) {
     return name.equals("time") ||
-           name.equals("threading");
+           name.equals("threading") ||
+           name.equals("matrix");
 }
 
 private Value nativeStart(List<Value> arguments) {
@@ -732,6 +764,231 @@ private Value nativeStart(List<Value> arguments) {
 
     return new Value(Value.Type.UNDEFINED, null);
 }
+
+private Value matrixInt(List<Value> arguments) {
+    if (arguments.size() != 2) {
+        throw new RuntimeException("matrix.int(rows, cols) recibe exactamente 2 argumentos.");
+    }
+
+    Value rowsValue = arguments.get(0);
+    Value colsValue = arguments.get(1);
+
+    if (rowsValue.type != Value.Type.INT || colsValue.type != Value.Type.INT) {
+        throw new RuntimeException("matrix.int(rows, cols) necesita INT, INT.");
+    }
+
+    int rows = (int) rowsValue.value;
+    int cols = (int) colsValue.value;
+
+    MatrixValue matrix = new MatrixValue(rows, cols);
+
+    return new Value(Value.Type.MATRIX, matrix);
+}
+
+
+private Value matrixFillParallel(List<Value> arguments) {
+    if (arguments.size() != 2) {
+        throw new RuntimeException("matrix.fill_parallel(matriz, hilos) recibe exactamente 2 argumentos.");
+    }
+
+    Value matrixValue = arguments.get(0);
+    Value threadsValue = arguments.get(1);
+
+    if (matrixValue.type != Value.Type.MATRIX) {
+        throw new RuntimeException("El primer argumento de matrix.fill_parallel debe ser MATRIX.");
+    }
+
+    if (threadsValue.type != Value.Type.INT) {
+        throw new RuntimeException("El segundo argumento de matrix.fill_parallel debe ser INT.");
+    }
+
+    MatrixValue matrix = (MatrixValue) matrixValue.value;
+    int threadCount = (int) threadsValue.value;
+
+    if (threadCount <= 0) {
+        throw new RuntimeException("La cantidad de hilos debe ser mayor que 0.");
+    }
+
+    Thread[] threads = new Thread[threadCount];
+
+    int chunk = matrix.rows / threadCount;
+
+    for (int i = 0; i < threadCount; i++) {
+        final int threadId = i;
+        final int startRow = i * chunk;
+        final int endRow = (i == threadCount - 1) ? matrix.rows : startRow + chunk;
+
+        threads[i] = new Thread(() -> {
+            for (int row = startRow; row < endRow; row++) {
+                int base = row * matrix.cols;
+
+                for (int col = 0; col < matrix.cols; col++) {
+                    matrix.data[base + col] = row + col;
+                }
+            }
+        });
+
+        threads[i].start();
+    }
+
+    for (int i = 0; i < threadCount; i++) {
+        try {
+            threads[i].join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("matrix.fill_parallel fue interrumpido.");
+        }
+    }
+
+    return new Value(Value.Type.UNDEFINED, null);
+}
+
+private Value matrixGet(List<Value> arguments) {
+    if (arguments.size() != 3) {
+        throw new RuntimeException("matrix.get(matriz, row, col) recibe exactamente 3 argumentos.");
+    }
+
+    Value matrixValue = arguments.get(0);
+    Value rowValue = arguments.get(1);
+    Value colValue = arguments.get(2);
+
+    if (matrixValue.type != Value.Type.MATRIX) {
+        throw new RuntimeException("El primer argumento de matrix.get debe ser MATRIX.");
+    }
+
+    if (rowValue.type != Value.Type.INT || colValue.type != Value.Type.INT) {
+        throw new RuntimeException("matrix.get necesita índices INT.");
+    }
+
+    MatrixValue matrix = (MatrixValue) matrixValue.value;
+    int row = (int) rowValue.value;
+    int col = (int) colValue.value;
+
+    return new Value(Value.Type.INT, matrix.get(row, col));
+}
+
+private Value matrixSet(List<Value> arguments) {
+    if (arguments.size() != 4) {
+        throw new RuntimeException("matrix.set(matriz, row, col, value) recibe exactamente 4 argumentos.");
+    }
+
+    Value matrixValue = arguments.get(0);
+    Value rowValue = arguments.get(1);
+    Value colValue = arguments.get(2);
+    Value newValue = arguments.get(3);
+
+    if (matrixValue.type != Value.Type.MATRIX) {
+        throw new RuntimeException("El primer argumento de matrix.set debe ser MATRIX.");
+    }
+
+    if (rowValue.type != Value.Type.INT || colValue.type != Value.Type.INT) {
+        throw new RuntimeException("matrix.set necesita índices INT.");
+    }
+
+    if (newValue.type != Value.Type.INT) {
+        throw new RuntimeException("matrix.set solo acepta valores INT por ahora.");
+    }
+
+    MatrixValue matrix = (MatrixValue) matrixValue.value;
+    int row = (int) rowValue.value;
+    int col = (int) colValue.value;
+    int value = (int) newValue.value;
+
+    matrix.set(row, col, value);
+
+    return new Value(Value.Type.UNDEFINED, null);
+}
+
+private Value matrixRows(List<Value> arguments) {
+    if (arguments.size() != 1) {
+        throw new RuntimeException("matrix.rows(matriz) recibe exactamente 1 argumento.");
+    }
+
+    Value matrixValue = arguments.get(0);
+
+    if (matrixValue.type != Value.Type.MATRIX) {
+        throw new RuntimeException("matrix.rows necesita MATRIX.");
+    }
+
+    MatrixValue matrix = (MatrixValue) matrixValue.value;
+
+    return new Value(Value.Type.INT, matrix.rows);
+}
+
+private Value matrixCols(List<Value> arguments) {
+    if (arguments.size() != 1) {
+        throw new RuntimeException("matrix.cols(matriz) recibe exactamente 1 argumento.");
+    }
+
+    Value matrixValue = arguments.get(0);
+
+    if (matrixValue.type != Value.Type.MATRIX) {
+        throw new RuntimeException("matrix.cols necesita MATRIX.");
+    }
+
+    MatrixValue matrix = (MatrixValue) matrixValue.value;
+
+    return new Value(Value.Type.INT, matrix.cols);
+}
+
+private Value matrixPrintSample(List<Value> arguments) {
+    if (arguments.size() != 3) {
+        throw new RuntimeException("matrix.print_sample(matriz, rows, cols) recibe exactamente 3 argumentos.");
+    }
+
+    Value matrixValue = arguments.get(0);
+    Value rowsValue = arguments.get(1);
+    Value colsValue = arguments.get(2);
+
+    if (matrixValue.type != Value.Type.MATRIX) {
+        throw new RuntimeException("matrix.print_sample necesita MATRIX.");
+    }
+
+    if (rowsValue.type != Value.Type.INT || colsValue.type != Value.Type.INT) {
+        throw new RuntimeException("matrix.print_sample necesita rows y cols INT.");
+    }
+
+    MatrixValue matrix = (MatrixValue) matrixValue.value;
+
+    int sampleRows = (int) rowsValue.value;
+    int sampleCols = (int) colsValue.value;
+
+    if (sampleRows > matrix.rows) {
+        sampleRows = matrix.rows;
+    }
+
+    if (sampleCols > matrix.cols) {
+        sampleCols = matrix.cols;
+    }
+
+    for (int row = 0; row < sampleRows; row++) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("[");
+
+        for (int col = 0; col < sampleCols; col++) {
+            builder.append(matrix.get(row, col));
+
+            if (col < sampleCols - 1) {
+                builder.append(", ");
+            }
+        }
+
+        if (sampleCols < matrix.cols) {
+            builder.append(", ...");
+        }
+
+        builder.append("]");
+
+        System.out.println(builder.toString());
+    }
+
+    if (sampleRows < matrix.rows) {
+        System.out.println("...");
+    }
+
+    return new Value(Value.Type.UNDEFINED, null);
+}
+
 private Value nativeJoin(List<Value> arguments) {
     if (arguments.size() != 1) {
         throw new RuntimeException("join() recibe exactamente 1 argumento.");

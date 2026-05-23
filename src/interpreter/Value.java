@@ -13,6 +13,7 @@ public class Value {
         ARRAY,
         THREAD,
         MODULE,
+        MATRIX,
         UNDEFINED
     }
 
@@ -26,10 +27,14 @@ public class Value {
 
     @Override
     public String toString() {
-        
+
         if (type == Type.MODULE) {
             ModuleValue module = (ModuleValue) value;
             return "<module " + module.name + ">";
+        }
+        if (type == Type.MATRIX) {
+            MatrixValue matrix = (MatrixValue) value;
+            return "<matrix.int " + matrix.rows + "x" + matrix.cols + ">";
         }
         if (type == Type.UNDEFINED) {
             return "undefined";

@@ -1,0 +1,49 @@
+import time;
+import matrix;
+
+let n = 10000;
+let hilos = 8;
+
+print "Creando matrix.int de ", n, " x ", n;
+
+let inicio = time.time();
+
+let m = matrix.int(n, n);
+
+let despuesCrear = time.time();
+
+print "Matriz creada: ", matrix.rows(m), " x ", matrix.cols(m);
+print "Tiempo creación: ", despuesCrear - inicio, " segundos";
+
+print "Llenando matriz con ", hilos, " hilos...";
+
+let inicioFill = time.time();
+
+matrix.fill_parallel(m, hilos);
+
+let finFill = time.time();
+
+print "Llenado terminado.";
+print "Tiempo fill_parallel: ", finFill - inicioFill, " segundos";
+
+print "";
+print "Valores de prueba:";
+print "m[0][0] = ", matrix.get(m, 0, 0);
+print "m[0][1] = ", matrix.get(m, 0, 1);
+print "m[10][10] = ", matrix.get(m, 10, 10);
+print "m[n-1][n-1] = ", matrix.get(m, n - 1, n - 1);
+
+print "";
+print "Modificando una celda...";
+matrix.set(m, 5, 5, 999);
+
+print "m[5][5] = ", matrix.get(m, 5, 5);
+
+print "";
+print "Muestra 5x5:";
+matrix.print_sample(m, 5, 5);
+
+let final = time.time();
+
+print "";
+print "Tiempo total: ", final - inicio, " segundos";
