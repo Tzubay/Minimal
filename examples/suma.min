@@ -11,8 +11,3 @@ let final = input("Escribe el numero final: ");
 
 print CICLO(inicio, final);
 
-[
-    [[],[],[]],
-    [[],[],[]],
-    [[],[],[]]
-]

@@ -173,6 +173,21 @@ private void assignVariable(String name, Value newValue) {
             return;
         }
 
+        if (stmt instanceof Stmt.Import) {
+            Stmt.Import importStmt = (Stmt.Import) stmt;
+
+            if (!isKnownModule(importStmt.moduleName)) {
+                throw new RuntimeException("Módulo no encontrado: " + importStmt.moduleName);
+            }
+
+            currentScope().put(
+                importStmt.moduleName,
+                new Value(Value.Type.MODULE, new ModuleValue(importStmt.moduleName))
+            );
+
+            return;
+        }
+
         if (stmt instanceof Stmt.Assign) {
             Stmt.Assign assignStmt = (Stmt.Assign) stmt;
             Value newValue = evaluate(assignStmt.value);
@@ -429,19 +444,27 @@ if (expr instanceof Expr.Call) {
 
     return callFunction(function, argumentValues);
 }
-        if (expr instanceof Expr.MethodCall) {
-            Expr.MethodCall methodCall = (Expr.MethodCall) expr;
+if (expr instanceof Expr.MethodCall) {
+    Expr.MethodCall methodCall = (Expr.MethodCall) expr;
 
-            Value object = evaluate(methodCall.object);
+    Value object = evaluate(methodCall.object);
 
-            List<Value> argumentValues = new ArrayList<>();
+    if (object.type == Value.Type.MODULE) {
+        ModuleValue module = (ModuleValue) object.value;
 
-            for (Expr argument : methodCall.arguments) {
-                argumentValues.add(evaluate(argument));
-            }
-
-            return callMethod(object, methodCall.methodName, argumentValues);
+        if (module.name.equals("threading") && methodCall.methodName.equals("thread")) {
+            return nativeThread(methodCall.arguments);
         }
+    }
+
+    List<Value> argumentValues = new ArrayList<>();
+
+    for (Expr argument : methodCall.arguments) {
+        argumentValues.add(evaluate(argument));
+    }
+
+    return callMethod(object, methodCall.methodName, argumentValues);
+}
         if (expr instanceof Expr.Binary) {
             Expr.Binary binary = (Expr.Binary) expr;
 
@@ -484,6 +507,41 @@ private boolean isNativeFunction(String name) {
            name.equals("start") ||
            name.equals("join") ||
            name.equals("sleep");
+}
+
+private Value callModuleMethod(String moduleName, String methodName, List<Value> arguments) {
+    switch (moduleName) {
+        case "time":
+            return callTimeModule(methodName, arguments);
+
+        case "threading":
+            return callThreadingModule(methodName, arguments);
+
+        default:
+            throw new RuntimeException("Módulo no encontrado: " + moduleName);
+    }
+}
+private Value callTimeModule(String methodName, List<Value> arguments) {
+    switch (methodName) {
+        case "sleep":
+            return nativeSleep(arguments);
+
+        default:
+            throw new RuntimeException("El módulo time no tiene método: " + methodName);
+    }
+}
+
+private Value callThreadingModule(String methodName, List<Value> arguments) {
+    switch (methodName) {
+        case "start":
+            return nativeStart(arguments);
+
+        case "join":
+            return nativeJoin(arguments);
+
+        default:
+            throw new RuntimeException("El módulo threading no tiene método: " + methodName);
+    }
 }
 
 private Value callNativeFunction(String name, List<Value> arguments) {
@@ -623,6 +681,11 @@ private Value nativeThread(List<Expr> rawArguments) {
     return new Value(Value.Type.THREAD, threadValue);
 }
 
+private boolean isKnownModule(String name) {
+    return name.equals("time") ||
+           name.equals("threading");
+}
+
 private Value nativeStart(List<Value> arguments) {
     if (arguments.size() != 1) {
         throw new RuntimeException("start() recibe exactamente 1 argumento.");
@@ -709,9 +772,15 @@ private Value callMethod(Value object, String methodName, List<Value> arguments)
         switch (methodName) {
             case "append":
                 return arrayAppend(object, arguments);
+
             default:
                 throw new RuntimeException("Método no definido para ARRAY: " + methodName);
         }
+    }
+
+    if (object.type == Value.Type.MODULE) {
+        ModuleValue module = (ModuleValue) object.value;
+        return callModuleMethod(module.name, methodName, arguments);
     }
 
     throw new RuntimeException("El tipo " + object.type + " no tiene métodos.");

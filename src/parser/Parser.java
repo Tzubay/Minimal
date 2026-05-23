@@ -54,7 +54,13 @@ public class Parser {
         consume(TokenType.SEMICOLON, "Se esperaba ';' después de break.");
         return new Stmt.Break();
     }
+    private Stmt importStatement() {
+        Token moduleName = consume(TokenType.IDENTIFIER, "Se esperaba el nombre del módulo.");
 
+        consume(TokenType.SEMICOLON, "Se esperaba ';' después del import.");
+
+        return new Stmt.Import(moduleName.lexeme);
+    }
     private Stmt switchStatement() {
         consume(TokenType.LEFT_PAREN, "Se esperaba '(' después de switch.");
 
@@ -148,6 +154,10 @@ private Stmt returnStatement() {
 
         if (match(TokenType.SWITCH)) {
             return switchStatement();
+        }
+
+        if (match(TokenType.IMPORT)) {
+            return importStatement();
         }
 
         if (match(TokenType.BREAK)) {

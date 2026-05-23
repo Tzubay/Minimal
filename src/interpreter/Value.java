@@ -12,6 +12,7 @@ public class Value {
         BOOLEAN,
         ARRAY,
         THREAD,
+        MODULE,
         UNDEFINED
     }
 
@@ -25,6 +26,11 @@ public class Value {
 
     @Override
     public String toString() {
+        
+        if (type == Type.MODULE) {
+            ModuleValue module = (ModuleValue) value;
+            return "<module " + module.name + ">";
+        }
         if (type == Type.UNDEFINED) {
             return "undefined";
         }

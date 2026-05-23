@@ -1,19 +1,22 @@
+import time;
+import threading;
+
 fn tarea(nombre, veces) {
     for (let i = 0; i < veces; i = i + 1) {
         print nombre, " -> ", i;
-        sleep(300);
+        time.sleep(300);
     }
 
     return "terminado";
 }
 
-let h1 = thread(tarea, "Hilo A", 3);
-let h2 = thread(tarea, "Hilo B", 3);
+let h1 = threading.thread(tarea, "Hilo A", 3);
+let h2 = threading.thread(tarea, "Hilo B", 3);
 
-start(h1);
-start(h2);
+threading.start(h1);
+threading.start(h2);
 
-join(h1);
-join(h2);
+threading.join(h1);
+threading.join(h2);
 
 print "Programa terminado";

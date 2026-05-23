@@ -168,8 +168,6 @@ public class Lexer {
     }
 
     private void identifier(char firstChar) {
-
-
         StringBuilder builder = new StringBuilder();
         builder.append(firstChar);
 
@@ -182,6 +180,9 @@ public class Lexer {
         switch (text) {
             case "let":
                 addToken(TokenType.LET, text);
+                break;
+            case "import":
+                addToken(TokenType.IMPORT, text);
                 break;
             case "print":
                 addToken(TokenType.PRINT, text);

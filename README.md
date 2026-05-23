@@ -1,3 +1,16 @@
+### About Minimal
+Minimal is a *high-level* programming language focused on simplicity in all aspects, designed for people with little to no programming experience, while still teaching advanced programming techniques.
+
+Minimal is compiled with *Java*.
+
+We aim to make it an open-source tool for the entire programming community who want to experiment with Minimal.
+
+This is a project still under constant development, so regular changes, adjustments, and improvements are expected.
+
+Any comments and suggestions are always welcome. The Minimal team is constantly working to bring you the best while staying true to our philosophy.
+
+Because anyone can (and should) program.
+
 ### How to compile?
 ```
 rm -rf out                            

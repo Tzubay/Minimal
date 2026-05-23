@@ -14,6 +14,7 @@ public enum TokenType {
     DEFAULT,
     BREAK,
     COLON,
+    IMPORT,
 
     IDENTIFIER,
     NUMBER,

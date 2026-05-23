@@ -26,6 +26,14 @@ public static class SwitchCase {
         }
     }
 
+    public static class Import extends Stmt {
+        public final String moduleName;
+
+        public Import(String moduleName) {
+            this.moduleName = moduleName;
+        }
+    }
+    
     public static class Expression extends Stmt {
         public final Expr expression;
 

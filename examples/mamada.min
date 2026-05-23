@@ -1,0 +1,238 @@
+import time;
+import threading;
+
+fn titulo(texto) {
+    print "";
+    print "====================================";
+    print texto;
+    print "====================================";
+    return "ok";
+}
+
+fn nombreDia(dia) {
+    let nombre;
+
+    switch (dia) {
+        case 1:
+            nombre = "Lunes";
+            break;
+
+        case 2:
+            nombre = "Martes";
+            break;
+
+        case 3:
+            nombre = "Miércoles";
+            break;
+
+        case 4:
+            nombre = "Jueves";
+            break;
+
+        case 5:
+            nombre = "Viernes";
+            break;
+
+        case 6:
+            nombre = "Sábado";
+            break;
+
+        case 7:
+            nombre = "Domingo";
+            break;
+
+        default:
+            nombre = "Día desconocido";
+            break;
+    }
+
+    return nombre;
+}
+
+fn construirMatriz(n, valorInicial) {
+    let matriz = [];
+
+    for (let fila = 0; fila < n; fila = fila + 1) {
+        matriz.append([]);
+
+        for (let columna = 0; columna < n; columna = columna + 1) {
+            matriz[fila].append(valorInicial);
+        }
+    }
+
+    return matriz;
+}
+
+fn llenarDiagonal(matriz, n, valor) {
+    for (let i = 0; i < n; i = i + 1) {
+        matriz[i][i] = valor;
+    }
+
+    return "Diagonal principal modificada";
+}
+
+fn llenarBorde(matriz, n, valor) {
+    for (let fila = 0; fila < n; fila = fila + 1) {
+        for (let columna = 0; columna < n; columna = columna + 1) {
+            if (fila == 0) {
+                matriz[fila][columna] = valor;
+            } else {
+                if (fila == n - 1) {
+                    matriz[fila][columna] = valor;
+                } else {
+                    if (columna == 0) {
+                        matriz[fila][columna] = valor;
+                    } else {
+                        if (columna == n - 1) {
+                            matriz[fila][columna] = valor;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return "Borde modificado";
+}
+
+fn imprimirMatriz(matriz, n) {
+    for (let i = 0; i < n; i = i + 1) {
+        print matriz[i];
+    }
+
+    return "Matriz impresa";
+}
+
+fn contarValor(matriz, n, buscado) {
+    let contador = 0;
+
+    for (let fila = 0; fila < n; fila = fila + 1) {
+        for (let columna = 0; columna < n; columna = columna + 1) {
+            if (matriz[fila][columna] == buscado) {
+                contador = contador + 1;
+            }
+        }
+    }
+
+    return contador;
+}
+
+fn worker(nombre, veces, pausa) {
+    for (let i = 0; i < veces; i = i + 1) {
+        print nombre, " trabajando en paso ", i;
+        time.sleep(pausa);
+    }
+
+    return nombre, " terminó";
+}
+
+titulo("MINIMAL SUPREMO DEMO");
+
+let usuario = input("Escribe tu nombre: ");
+let dimension = input("Tamaño de matriz nxn: ");
+let dia = input("Número de día 1-7: ");
+
+print "";
+print "Hola ", usuario, ". Hoy según Minimal es: ", nombreDia(dia);
+print "Construyendo una matriz de ", dimension, " x ", dimension;
+
+let matriz = construirMatriz(dimension, ".");
+
+titulo("MATRIZ INICIAL");
+imprimirMatriz(matriz, dimension);
+
+titulo("MODIFICANDO MATRIZ");
+print llenarBorde(matriz, dimension, "#");
+print llenarDiagonal(matriz, dimension, "X");
+
+if (dimension > 2) {
+    matriz[1][1] = "C";
+    print "Centro personalizado en matriz[1][1]";
+} else {
+    print "Matriz pequeña, no se modifica el centro especial";
+}
+
+titulo("MATRIZ FINAL");
+imprimirMatriz(matriz, dimension);
+
+let cantidadBorde = contarValor(matriz, dimension, "#");
+let cantidadDiagonal = contarValor(matriz, dimension, "X");
+
+print "";
+print "Cantidad de # encontrados: ", cantidadBorde;
+print "Cantidad de X encontrados: ", cantidadDiagonal;
+print "Filas de la matriz: ", len(matriz);
+print "Columnas de la primera fila: ", len(matriz[0]);
+
+titulo("ARREGLO DE REPORTE");
+let reporte = [];
+
+reporte.append("Usuario");
+reporte.append(usuario);
+reporte.append("Dimension");
+reporte.append(dimension);
+reporte.append("Dia");
+reporte.append(nombreDia(dia));
+reporte.append("Matriz");
+reporte.append(matriz);
+
+print reporte;
+print "Elementos del reporte: ", len(reporte);
+
+titulo("WHILE TEST");
+let cuenta = 0;
+
+while cuenta < 3 {
+    print "while cuenta = ", cuenta;
+    cuenta = cuenta + 1;
+}
+
+titulo("THREADING TEST");
+
+fn tareaA() {
+    return worker("Hilo A", 3, 250);
+}
+
+fn tareaB() {
+    return worker("Hilo B", 3, 250);
+}
+
+let h1 = threading.thread(tareaA);
+let h2 = threading.thread(tareaB);
+
+print "Hilos creados: ", h1, " y ", h2;
+print "Iniciando hilos...";
+
+threading.start(h1);
+threading.start(h2);
+
+threading.join(h1);
+threading.join(h2);
+
+print "Todos los hilos terminaron";
+
+titulo("SWITCH FINAL");
+
+let evaluacion;
+
+switch (dimension) {
+    case 1:
+        evaluacion = "Matriz mini";
+        break;
+
+    case 2:
+        evaluacion = "Matriz pequeña";
+        break;
+
+    case 3:
+        evaluacion = "Matriz clásica 3x3, nice";
+        break;
+
+    default:
+        evaluacion = "Matriz grandecita, Minimal anda fuerte";
+        break;
+}
+
+print "Evaluación final: ", evaluacion;
+print "";
+print "Fin del demo supremo de Minimal.";
