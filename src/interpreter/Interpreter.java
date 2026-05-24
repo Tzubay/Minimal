@@ -597,6 +597,18 @@ private Value callMatrixModule(String methodName, List<Value> arguments) {
         case "rows":
             return matrixRows(arguments);
 
+        case "multiply":
+            return matrixMultiply(arguments);
+
+        case "matmul":
+            return matrixMatmul(arguments);
+
+        case "sum":
+            return matrixSum(arguments);
+
+        case "mean":
+            return matrixMean(arguments);
+
         case "cols":
             return matrixCols(arguments);
 
@@ -1051,6 +1063,116 @@ private Value matrixSet(List<Value> arguments) {
     matrix.set(row, col, value);
 
     return new Value(Value.Type.UNDEFINED, null);
+}
+
+private Value matrixMultiply(List<Value> arguments) {
+    if (arguments.size() != 2) {
+        throw new RuntimeException("matrix.multiply(a, b) recibe exactamente 2 argumentos.");
+    }
+
+    MatrixValue a = requireMatrix(
+        arguments.get(0),
+        "El primer argumento de matrix.multiply debe ser MATRIX."
+    );
+
+    MatrixValue b = requireMatrix(
+        arguments.get(1),
+        "El segundo argumento de matrix.multiply debe ser MATRIX."
+    );
+
+    if (a.rows != b.rows || a.cols != b.cols) {
+        throw new RuntimeException("matrix.multiply requiere matrices con las mismas dimensiones.");
+    }
+
+    MatrixValue result = new MatrixValue(a.rows, a.cols);
+
+    for (int i = 0; i < a.data.length; i++) {
+        result.data[i] = a.data[i] * b.data[i];
+    }
+
+    return new Value(Value.Type.MATRIX, result);
+}
+
+private Value matrixMatmul(List<Value> arguments) {
+    if (arguments.size() != 2) {
+        throw new RuntimeException("matrix.matmul(a, b) recibe exactamente 2 argumentos.");
+    }
+
+    MatrixValue a = requireMatrix(
+        arguments.get(0),
+        "El primer argumento de matrix.matmul debe ser MATRIX."
+    );
+
+    MatrixValue b = requireMatrix(
+        arguments.get(1),
+        "El segundo argumento de matrix.matmul debe ser MATRIX."
+    );
+
+    if (a.cols != b.rows) {
+        throw new RuntimeException(
+            "matrix.matmul requiere que columnas de A sean iguales a filas de B."
+        );
+    }
+
+    MatrixValue result = new MatrixValue(a.rows, b.cols);
+
+    for (int row = 0; row < a.rows; row++) {
+        for (int col = 0; col < b.cols; col++) {
+            int sum = 0;
+
+            for (int k = 0; k < a.cols; k++) {
+                sum += a.get(row, k) * b.get(k, col);
+            }
+
+            result.set(row, col, sum);
+        }
+    }
+
+    return new Value(Value.Type.MATRIX, result);
+}
+
+private Value matrixSum(List<Value> arguments) {
+    if (arguments.size() != 1) {
+        throw new RuntimeException("matrix.sum(m) recibe exactamente 1 argumento.");
+    }
+
+    MatrixValue matrix = requireMatrix(
+        arguments.get(0),
+        "matrix.sum necesita MATRIX."
+    );
+
+    long sum = 0;
+
+    for (int i = 0; i < matrix.data.length; i++) {
+        sum += matrix.data[i];
+    }
+
+    if (sum <= Integer.MAX_VALUE && sum >= Integer.MIN_VALUE) {
+        return new Value(Value.Type.INT, (int) sum);
+    }
+
+    return new Value(Value.Type.FLOAT, (double) sum);
+}
+
+private Value matrixMean(List<Value> arguments) {
+    if (arguments.size() != 1) {
+        throw new RuntimeException("matrix.mean(m) recibe exactamente 1 argumento.");
+    }
+
+    MatrixValue matrix = requireMatrix(
+        arguments.get(0),
+        "matrix.mean necesita MATRIX."
+    );
+
+    long sum = 0;
+
+    for (int i = 0; i < matrix.data.length; i++) {
+        sum += matrix.data[i];
+    }
+
+    double mean = sum / (double) matrix.data.length;
+
+    return new Value(Value.Type.FLOAT, mean);
 }
 
 private Value matrixRows(List<Value> arguments) {

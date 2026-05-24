@@ -1,0 +1,75 @@
+import matrix;
+import time;
+
+print "=== multiply elemento por elemento ===";
+
+let a = matrix.ones(3, 3);
+let b = matrix.ones(3, 3);
+
+matrix.fill(b, 5);
+
+let mult = matrix.multiply(a, b);
+
+matrix.print_sample(mult, 3, 3);
+
+print "";
+print "Suma mult: ", matrix.sum(mult);
+print "Media mult: ", matrix.mean(mult);
+
+print "";
+print "=== matmul real ===";
+
+let x = matrix.ones(2, 3);
+let y = matrix.ones(3, 2);
+
+let z = matrix.matmul(x, y);
+
+matrix.print_sample(z, 2, 2);
+
+print "z rows: ", matrix.rows(z);
+print "z cols: ", matrix.cols(z);
+print "z sum: ", matrix.sum(z);
+print "z mean: ", matrix.mean(z);
+
+print "";
+print "=== prueba con random ===";
+
+let r1 = matrix.random(4, 4);
+let r2 = matrix.random(4, 4);
+
+print "r1:";
+matrix.print_sample(r1, 4, 4);
+
+print "r2:";
+matrix.print_sample(r2, 4, 4);
+
+let rsum = matrix.add(r1, r2);
+let rmul = matrix.multiply(r1, r2);
+
+print "r1 + r2:";
+matrix.print_sample(rsum, 4, 4);
+
+print "r1 * r2 elemento por elemento:";
+matrix.print_sample(rmul, 4, 4);
+
+print "sum(rsum): ", matrix.sum(rsum);
+print "mean(rsum): ", matrix.mean(rsum);
+
+print "";
+print "=== benchmark matmul pequeño ===";
+
+let n = 300;
+
+let m1 = matrix.ones(n, n);
+let m2 = matrix.ones(n, n);
+
+let inicio = time.time();
+
+let m3 = matrix.matmul(m1, m2);
+
+let final = time.time();
+
+print "matmul ", n, " x ", n;
+print "m3[0][0]: ", matrix.get(m3, 0, 0);
+print "m3[n-1][n-1]: ", matrix.get(m3, n - 1, n - 1);
+print "Tiempo matmul: ", final - inicio, " segundos";
