@@ -93,3 +93,33 @@ print num1, " - ", decim1, " = ", num1 - decim1;
 
 ### structure 
 
+### Matrix Library
+
+Matrix is a Library to calculate of Matrix acelerated
+
+Functions of Matrix:
+```
+matrix.int(rows, cols);
+matrix.zeros(rows, cols);
+matrix.ones(rows, cols);
+matrix.random(rows, cols);
+
+matrix.fill(m, value);
+matrix.fill_parallel(m, hilos);
+
+matrix.add(a, b);
+matrix.multiply(a, b);
+matrix.matmul(a, b);
+matrix.matmul_parallel(a, b, hilos);
+matrix.transpose(m);
+
+matrix.sum(m);
+matrix.mean(m);
+
+matrix.get(m, row, col);
+matrix.set(m, row, col, value);
+
+matrix.rows(m);
+matrix.cols(m);
+matrix.print_sample(m, rows, cols);
+```

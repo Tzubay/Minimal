@@ -603,6 +603,9 @@ private Value callMatrixModule(String methodName, List<Value> arguments) {
         case "matmul":
             return matrixMatmul(arguments);
 
+        case "matmul_parallel":
+            return matrixMatmulParallel(arguments);
+            
         case "sum":
             return matrixSum(arguments);
 
@@ -1125,6 +1128,81 @@ private Value matrixMatmul(List<Value> arguments) {
             }
 
             result.set(row, col, sum);
+        }
+    }
+
+    return new Value(Value.Type.MATRIX, result);
+}
+
+private Value matrixMatmulParallel(List<Value> arguments) {
+    if (arguments.size() != 3) {
+        throw new RuntimeException("matrix.matmul_parallel(a, b, hilos) recibe exactamente 3 argumentos.");
+    }
+
+    MatrixValue a = requireMatrix(
+        arguments.get(0),
+        "El primer argumento de matrix.matmul_parallel debe ser MATRIX."
+    );
+
+    MatrixValue b = requireMatrix(
+        arguments.get(1),
+        "El segundo argumento de matrix.matmul_parallel debe ser MATRIX."
+    );
+
+    int threadCount = requireInt(
+        arguments.get(2),
+        "El tercer argumento de matrix.matmul_parallel debe ser INT."
+    );
+
+    if (a.cols != b.rows) {
+        throw new RuntimeException(
+            "matrix.matmul_parallel requiere que columnas de A sean iguales a filas de B."
+        );
+    }
+
+    if (threadCount <= 0) {
+        throw new RuntimeException("La cantidad de hilos debe ser mayor que 0.");
+    }
+
+    MatrixValue result = new MatrixValue(a.rows, b.cols);
+
+    if (threadCount > a.rows) {
+        threadCount = a.rows;
+    }
+
+    Thread[] threads = new Thread[threadCount];
+
+    int chunk = a.rows / threadCount;
+
+    for (int i = 0; i < threadCount; i++) {
+        final int startRow = i * chunk;
+        final int endRow = (i == threadCount - 1) ? a.rows : startRow + chunk;
+
+        threads[i] = new Thread(() -> {
+            for (int row = startRow; row < endRow; row++) {
+                int resultBase = row * result.cols;
+
+                for (int col = 0; col < b.cols; col++) {
+                    int sum = 0;
+
+                    for (int k = 0; k < a.cols; k++) {
+                        sum += a.data[row * a.cols + k] * b.data[k * b.cols + col];
+                    }
+
+                    result.data[resultBase + col] = sum;
+                }
+            }
+        });
+
+        threads[i].start();
+    }
+
+    for (int i = 0; i < threadCount; i++) {
+        try {
+            threads[i].join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("matrix.matmul_parallel fue interrumpido.");
         }
     }
 

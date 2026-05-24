@@ -1,0 +1,41 @@
+import matrix;
+import time;
+
+print "=== matmul_parallel ===";
+
+let n = 3000;
+let hilos = 8;
+
+let a = matrix.ones(n, n);
+let b = matrix.ones(n, n);
+
+print "Matrices creadas: ", n, " x ", n;
+print "Hilos: ", hilos;
+
+let inicioNormal = time.time();
+
+let normal = matrix.matmul(a, b);
+
+let finNormal = time.time();
+
+print "";
+print "matmul normal terminado";
+print "normal[0][0]: ", matrix.get(normal, 0, 0);
+print "normal[n-1][n-1]: ", matrix.get(normal, n - 1, n - 1);
+print "Tiempo matmul normal: ", finNormal - inicioNormal, " segundos";
+
+let inicioParalelo = time.time();
+
+let paralelo = matrix.matmul_parallel(a, b, hilos);
+
+let finParalelo = time.time();
+
+print "";
+print "matmul_parallel terminado";
+print "paralelo[0][0]: ", matrix.get(paralelo, 0, 0);
+print "paralelo[n-1][n-1]: ", matrix.get(paralelo, n - 1, n - 1);
+print "Tiempo matmul_parallel: ", finParalelo - inicioParalelo, " segundos";
+
+print "";
+print "Muestra resultado paralelo:";
+matrix.print_sample(paralelo, 5, 5);
