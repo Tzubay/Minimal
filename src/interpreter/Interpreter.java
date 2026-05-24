@@ -1,4 +1,5 @@
 package interpreter;
+import java.util.Random;
 
 import ast.*;
 import lexer.*;
@@ -566,8 +567,26 @@ private Value callMatrixModule(String methodName, List<Value> arguments) {
         case "int":
             return matrixInt(arguments);
 
+        case "zeros":
+            return matrixZeros(arguments);
+
+        case "ones":
+            return matrixOnes(arguments);
+
+        case "random":
+            return matrixRandom(arguments);
+
+        case "fill":
+            return matrixFill(arguments);
+
         case "fill_parallel":
             return matrixFillParallel(arguments);
+
+        case "add":
+            return matrixAdd(arguments);
+
+        case "transpose":
+            return matrixTranspose(arguments);
 
         case "get":
             return matrixGet(arguments);
@@ -841,6 +860,141 @@ private Value matrixFillParallel(List<Value> arguments) {
     }
 
     return new Value(Value.Type.UNDEFINED, null);
+}
+
+private int requireInt(Value value, String message) {
+    if (value.type != Value.Type.INT) {
+        throw new RuntimeException(message);
+    }
+
+    return (int) value.value;
+}
+
+private MatrixValue requireMatrix(Value value, String message) {
+    if (value.type != Value.Type.MATRIX) {
+        throw new RuntimeException(message);
+    }
+
+    return (MatrixValue) value.value;
+}
+
+private Value matrixZeros(List<Value> arguments) {
+    if (arguments.size() != 2) {
+        throw new RuntimeException("matrix.zeros(rows, cols) recibe exactamente 2 argumentos.");
+    }
+
+    int rows = requireInt(arguments.get(0), "matrix.zeros necesita rows INT.");
+    int cols = requireInt(arguments.get(1), "matrix.zeros necesita cols INT.");
+
+    MatrixValue matrix = new MatrixValue(rows, cols);
+
+    return new Value(Value.Type.MATRIX, matrix);
+}
+
+private Value matrixOnes(List<Value> arguments) {
+    if (arguments.size() != 2) {
+        throw new RuntimeException("matrix.ones(rows, cols) recibe exactamente 2 argumentos.");
+    }
+
+    int rows = requireInt(arguments.get(0), "matrix.ones necesita rows INT.");
+    int cols = requireInt(arguments.get(1), "matrix.ones necesita cols INT.");
+
+    MatrixValue matrix = new MatrixValue(rows, cols);
+
+    for (int i = 0; i < matrix.data.length; i++) {
+        matrix.data[i] = 1;
+    }
+
+    return new Value(Value.Type.MATRIX, matrix);
+}
+
+private Value matrixFill(List<Value> arguments) {
+    if (arguments.size() != 2) {
+        throw new RuntimeException("matrix.fill(matriz, value) recibe exactamente 2 argumentos.");
+    }
+
+    MatrixValue matrix = requireMatrix(
+        arguments.get(0),
+        "El primer argumento de matrix.fill debe ser MATRIX."
+    );
+
+    int value = requireInt(
+        arguments.get(1),
+        "El segundo argumento de matrix.fill debe ser INT."
+    );
+
+    for (int i = 0; i < matrix.data.length; i++) {
+        matrix.data[i] = value;
+    }
+
+    return new Value(Value.Type.UNDEFINED, null);
+}
+
+private Value matrixRandom(List<Value> arguments) {
+    if (arguments.size() != 2) {
+        throw new RuntimeException("matrix.random(rows, cols) recibe exactamente 2 argumentos.");
+    }
+
+    int rows = requireInt(arguments.get(0), "matrix.random necesita rows INT.");
+    int cols = requireInt(arguments.get(1), "matrix.random necesita cols INT.");
+
+    MatrixValue matrix = new MatrixValue(rows, cols);
+    Random random = new Random();
+
+    for (int i = 0; i < matrix.data.length; i++) {
+        matrix.data[i] = random.nextInt(100);
+    }
+
+    return new Value(Value.Type.MATRIX, matrix);
+}
+
+private Value matrixAdd(List<Value> arguments) {
+    if (arguments.size() != 2) {
+        throw new RuntimeException("matrix.add(a, b) recibe exactamente 2 argumentos.");
+    }
+
+    MatrixValue a = requireMatrix(
+        arguments.get(0),
+        "El primer argumento de matrix.add debe ser MATRIX."
+    );
+
+    MatrixValue b = requireMatrix(
+        arguments.get(1),
+        "El segundo argumento de matrix.add debe ser MATRIX."
+    );
+
+    if (a.rows != b.rows || a.cols != b.cols) {
+        throw new RuntimeException("matrix.add requiere matrices con las mismas dimensiones.");
+    }
+
+    MatrixValue result = new MatrixValue(a.rows, a.cols);
+
+    for (int i = 0; i < a.data.length; i++) {
+        result.data[i] = a.data[i] + b.data[i];
+    }
+
+    return new Value(Value.Type.MATRIX, result);
+}
+
+private Value matrixTranspose(List<Value> arguments) {
+    if (arguments.size() != 1) {
+        throw new RuntimeException("matrix.transpose(matriz) recibe exactamente 1 argumento.");
+    }
+
+    MatrixValue matrix = requireMatrix(
+        arguments.get(0),
+        "matrix.transpose necesita MATRIX."
+    );
+
+    MatrixValue result = new MatrixValue(matrix.cols, matrix.rows);
+
+    for (int row = 0; row < matrix.rows; row++) {
+        for (int col = 0; col < matrix.cols; col++) {
+            result.set(col, row, matrix.get(row, col));
+        }
+    }
+
+    return new Value(Value.Type.MATRIX, result);
 }
 
 private Value matrixGet(List<Value> arguments) {
