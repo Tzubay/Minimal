@@ -9,6 +9,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+
 
 public class Interpreter {
     private final Map<String, Value> globalScope = new HashMap<>();
@@ -77,7 +83,39 @@ private Value getVariable(String name) {
 
 }
 
+private Value getProperty(Value object, String name) {
+    if (object.type == Value.Type.RESPONSE) {
+        ResponseValue response = (ResponseValue) object.value;
 
+        switch (name) {
+            case "status_code":
+                return new Value(Value.Type.INT, response.statusCode);
+
+            case "text":
+                return new Value(Value.Type.STRING, response.text);
+
+            default:
+                throw new RuntimeException("Response no tiene propiedad: " + name);
+        }
+    }
+
+    if (object.type == Value.Type.MATRIX) {
+        MatrixValue matrix = (MatrixValue) object.value;
+
+        switch (name) {
+            case "rows":
+                return new Value(Value.Type.INT, matrix.rows);
+
+            case "cols":
+                return new Value(Value.Type.INT, matrix.cols);
+
+            default:
+                throw new RuntimeException("Matrix no tiene propiedad: " + name);
+        }
+    }
+
+    throw new RuntimeException("El valor no tiene propiedades.");
+}
 
 private void assignVariable(String name, Value newValue) {
 
@@ -353,6 +391,29 @@ private void executeBlock(List<Stmt> statements) {
             return new Value(Value.Type.INT, ((Expr.Number) expr).value);
         }
 
+        if (expr instanceof Expr.DictExpr) {
+            Expr.DictExpr dictExpr = (Expr.DictExpr) expr;
+
+            DictValue dict = new DictValue();
+
+            for (int i = 0; i < dictExpr.keys.size(); i++) {
+                String key = dictExpr.keys.get(i);
+                Value value = evaluate(dictExpr.values.get(i));
+
+                dict.values.put(key, value);
+            }
+
+            return new Value(Value.Type.DICT, dict);
+        }
+
+        if (expr instanceof Expr.Get) {
+            Expr.Get get = (Expr.Get) expr;
+
+            Value object = evaluate(get.object);
+
+            return getProperty(object, get.name);
+        }
+
         if (expr instanceof Expr.FloatExpr) {
             return new Value(Value.Type.FLOAT, ((Expr.FloatExpr) expr).value);
         }
@@ -521,6 +582,9 @@ private Value callModuleMethod(String moduleName, String methodName, List<Value>
         case "matrix":
             return callMatrixModule(methodName, arguments);
 
+        case "requests":
+            return callRequestsModule(methodName, arguments);
+            
         default:
             throw new RuntimeException("Módulo no encontrado: " + moduleName);
     }
@@ -559,6 +623,19 @@ private Value callThreadingModule(String methodName, List<Value> arguments) {
 
         default:
             throw new RuntimeException("El módulo threading no tiene método: " + methodName);
+    }
+}
+
+private Value callRequestsModule(String methodName, List<Value> arguments) {
+    switch (methodName) {
+        case "get":
+            return requestsGet(arguments);
+
+        case "post":
+            return requestsPost(arguments);
+
+        default:
+            throw new RuntimeException("El módulo requests no tiene método: " + methodName);
     }
 }
 
@@ -763,7 +840,8 @@ private Value nativeThread(List<Expr> rawArguments) {
 private boolean isKnownModule(String name) {
     return name.equals("time") ||
            name.equals("threading") ||
-           name.equals("matrix");
+           name.equals("matrix") ||
+           name.equals("requests");
 }
 
 private Value nativeStart(List<Value> arguments) {
@@ -891,6 +969,148 @@ private MatrixValue requireMatrix(Value value, String message) {
     }
 
     return (MatrixValue) value.value;
+}
+
+private Value requestsGet(List<Value> arguments) {
+    if (arguments.size() != 1) {
+        throw new RuntimeException("requests.get(url) recibe exactamente 1 argumento.");
+    }
+
+    Value urlValue = arguments.get(0);
+
+    if (urlValue.type != Value.Type.STRING) {
+        throw new RuntimeException("requests.get(url) necesita un STRING.");
+    }
+
+    String url = (String) urlValue.value;
+
+    try {
+        HttpClient client = HttpClient.newHttpClient();
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .GET()
+                .build();
+
+        HttpResponse<String> response = client.send(
+                request,
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
+        );
+
+        ResponseValue responseValue = new ResponseValue(
+                response.statusCode(),
+                response.body()
+        );
+
+        return new Value(Value.Type.RESPONSE, responseValue);
+
+    } catch (Exception e) {
+        throw new RuntimeException("Error en requests.get: " + e.getMessage());
+    }
+}
+
+private Value requestsPost(List<Value> arguments) {
+    if (arguments.size() != 2) {
+        throw new RuntimeException("requests.post(url, json) recibe exactamente 2 argumentos por ahora.");
+    }
+
+    Value urlValue = arguments.get(0);
+    Value jsonValue = arguments.get(1);
+
+    if (urlValue.type != Value.Type.STRING) {
+        throw new RuntimeException("El primer argumento de requests.post debe ser STRING.");
+    }
+
+    if (jsonValue.type != Value.Type.DICT) {
+        throw new RuntimeException("El segundo argumento de requests.post debe ser DICT.");
+    }
+
+    String url = (String) urlValue.value;
+    DictValue dict = (DictValue) jsonValue.value;
+
+    String jsonBody = dictToJson(dict);
+
+    try {
+        HttpClient client = HttpClient.newHttpClient();
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(jsonBody, StandardCharsets.UTF_8))
+                .build();
+
+        HttpResponse<String> response = client.send(
+                request,
+                HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
+        );
+
+        ResponseValue responseValue = new ResponseValue(
+                response.statusCode(),
+                response.body()
+        );
+
+        return new Value(Value.Type.RESPONSE, responseValue);
+
+    } catch (Exception e) {
+        throw new RuntimeException("Error en requests.post: " + e.getMessage());
+    }
+}
+
+private String dictToJson(DictValue dict) {
+    StringBuilder builder = new StringBuilder();
+
+    builder.append("{");
+
+    int index = 0;
+
+    for (Map.Entry<String, Value> entry : dict.values.entrySet()) {
+        builder.append("\"")
+                .append(escapeJson(entry.getKey()))
+                .append("\":");
+
+        builder.append(valueToJson(entry.getValue()));
+
+        if (index < dict.values.size() - 1) {
+            builder.append(",");
+        }
+
+        index++;
+    }
+
+    builder.append("}");
+
+    return builder.toString();
+}
+
+private String valueToJson(Value value) {
+    switch (value.type) {
+        case STRING:
+            return "\"" + escapeJson((String) value.value) + "\"";
+
+        case INT:
+            return value.value.toString();
+
+        case FLOAT:
+            return value.value.toString();
+
+        case BOOLEAN:
+            return value.value.toString();
+
+        case DICT:
+            return dictToJson((DictValue) value.value);
+
+        default:
+            throw new RuntimeException("No se puede convertir a JSON el tipo: " + value.type);
+    }
+}
+
+private String escapeJson(String text) {
+    return text
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t");
 }
 
 private Value matrixZeros(List<Value> arguments) {

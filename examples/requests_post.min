@@ -1,0 +1,19 @@
+import requests;
+
+let url = "https://jsonplaceholder.typicode.com/posts";
+
+let datos_a_enviar = {
+    "nombre": "Juan",
+    "curso": "Minimal"
+};
+
+let respuesta = requests.post(url, datos_a_enviar);
+
+if respuesta.status_code == 201 {
+    print "POST exitoso";
+    print respuesta.text;
+} else {
+    print "Error en POST:";
+    print respuesta.status_code;
+    print respuesta.text;
+}

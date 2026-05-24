@@ -1,0 +1,12 @@
+import requests;
+
+let respuesta = requests.get("https://jsonplaceholder.typicode.com/posts/1");
+
+if respuesta.status_code == 200 {
+    print "Petición exitosa";
+    print "Status:", respuesta.status_code;
+    print respuesta.text;
+} else {
+    print "Error:";
+    print respuesta.status_code;
+}

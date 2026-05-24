@@ -57,6 +57,25 @@ public abstract class Expr {
         }
     }
 
+    public static class DictExpr extends Expr {
+        public final List<String> keys;
+        public final List<Expr> values;
+
+        public DictExpr(List<String> keys, List<Expr> values) {
+            this.keys = keys;
+            this.values = values;
+        }
+    }
+
+    public static class Get extends Expr {
+        public final Expr object;
+        public final String name;
+
+        public Get(Expr object, String name) {
+            this.object = object;
+            this.name = name;
+        }
+    }
 
     public static class Variable extends Expr {
         public final String name;

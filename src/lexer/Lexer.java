@@ -11,22 +11,25 @@ public class Lexer {
         return true;
     }
 
-    private void string() {
+    private void string(char quote) {
+        int stringStart = current;
 
-    StringBuilder builder = new StringBuilder();
+        while (!isAtEnd() && peek() != quote) {
+            advance();
+        }
 
-    while (!isAtEnd() && peek() != '"') {
-        builder.append(advance());
+        if (isAtEnd()) {
+            throw new RuntimeException("String sin cerrar.");
+        }
+
+        String value = source.substring(stringStart, current);
+
+        advance();
+
+        addToken(TokenType.STRING, value);
     }
 
-    if (isAtEnd()) {
-        throw new RuntimeException("String sin cerrar.");
-    }
 
-    advance();
-
-    addToken(TokenType.STRING, builder.toString());
-}
     private final String source;
     private final List<Token> tokens = new ArrayList<>();
 
@@ -113,11 +116,16 @@ public class Lexer {
                 case '[':
                     addToken(TokenType.LEFT_BRACKET, "[");
                     break;
+
                 case ']':
                     addToken(TokenType.RIGHT_BRACKET, "]");
                     break;
                 case '"':
-                    string();
+                    string('"');
+                    break;
+
+                case '\'':
+                    string('\'');
                     break;
                     
                 case ' ':

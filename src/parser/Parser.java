@@ -413,21 +413,23 @@ private Expr postfix() {
             expr = new Expr.Call(expr, arguments);
         }
         else if (match(TokenType.DOT)) {
-            Token methodName = consume(TokenType.IDENTIFIER, "Se esperaba nombre del método después de '.'.");
+            Token name = consume(TokenType.IDENTIFIER, "Se esperaba nombre después de '.'.");
 
-            consume(TokenType.LEFT_PAREN, "Se esperaba '(' después del nombre del método.");
+            if (match(TokenType.LEFT_PAREN)) {
+                List<Expr> arguments = new ArrayList<>();
 
-            List<Expr> arguments = new ArrayList<>();
+                if (!check(TokenType.RIGHT_PAREN)) {
+                    do {
+                        arguments.add(expression());
+                    } while (match(TokenType.COMMA));
+                }
 
-            if (!check(TokenType.RIGHT_PAREN)) {
-                do {
-                    arguments.add(expression());
-                } while (match(TokenType.COMMA));
+                consume(TokenType.RIGHT_PAREN, "Se esperaba ')' después de argumentos.");
+
+                expr = new Expr.MethodCall(expr, name.lexeme, arguments);
+            } else {
+                expr = new Expr.Get(expr, name.lexeme);
             }
-
-            consume(TokenType.RIGHT_PAREN, "Se esperaba ')' después de los argumentos del método.");
-
-            expr = new Expr.MethodCall(expr, methodName.lexeme, arguments);
         }
         else {
             break;
@@ -458,6 +460,9 @@ private Expr postfix() {
             return arrayLiteral();
         }
 
+        if (match(TokenType.LEFT_BRACE)) {
+            return dictLiteral();
+        }
         if (match(TokenType.IDENTIFIER)) {
             return new Expr.Variable(previous().lexeme);
         }
@@ -483,7 +488,29 @@ private Expr postfix() {
 
         return new Expr.ArrayExpr(elements);
     }
+    private Expr dictLiteral() {
+        List<String> keys = new ArrayList<>();
+        List<Expr> values = new ArrayList<>();
 
+        if (!check(TokenType.RIGHT_BRACE)) {
+            do {
+                Token key = consume(TokenType.STRING, "Las llaves del diccionario deben ser strings.");
+
+                consume(TokenType.COLON, "Se esperaba ':' después de la llave del diccionario.");
+
+                Expr value = expression();
+
+                /*keys.add((String) key.literal);*/
+                keys.add(key.lexeme);
+                values.add(value);
+
+            } while (match(TokenType.COMMA));
+        }
+
+        consume(TokenType.RIGHT_BRACE, "Se esperaba '}' después del diccionario.");
+
+        return new Expr.DictExpr(keys, values);
+    }
     private boolean match(TokenType... types) {
         for (TokenType type : types) {
             if (check(type)) {

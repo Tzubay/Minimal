@@ -14,6 +14,8 @@ public class Value {
         THREAD,
         MODULE,
         MATRIX,
+        DICT,
+        RESPONSE,
         UNDEFINED
     }
 
@@ -32,6 +34,16 @@ public class Value {
             ModuleValue module = (ModuleValue) value;
             return "<module " + module.name + ">";
         }
+
+        if (type == Type.DICT) {
+            return value.toString();
+        }
+
+        if (type == Type.RESPONSE) {
+            ResponseValue response = (ResponseValue) value;
+            return "<response " + response.statusCode + ">";
+        }
+        
         if (type == Type.MATRIX) {
             MatrixValue matrix = (MatrixValue) value;
             return "<matrix.int " + matrix.rows + "x" + matrix.cols + ">";
